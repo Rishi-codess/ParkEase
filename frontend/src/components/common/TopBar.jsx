@@ -1,47 +1,46 @@
-import { FaSearch, FaBell, FaUserCircle } from "react-icons/fa";
+import { FiSearch, FiBell } from "react-icons/fi";
+import { FaUserCircle } from "react-icons/fa";
 
 export default function TopBar({ onSearch, searchTerm, userInfo, toggleProfile }) {
     return (
-        <div className="fixed top-0 left-64 right-0 h-20 bg-dark-card/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-8 z-40">
-
-            {/* SEARCH BAR */}
-            <div className="relative w-96">
-                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-neon-blue transition-colors" />
+        /* z-40 ensures TopBar is ALWAYS above page content (which is z-10) */
+        <header className="fixed top-0 right-0 left-64 z-40 h-16 bg-dark-bg/90 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8">
+            {/* Search Bar */}
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-2 w-80 focus-within:border-neon-blue/40 transition-colors">
+                <FiSearch className="text-gray-400 flex-shrink-0" />
                 <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder="Search parking..."
                     value={searchTerm || ""}
                     onChange={(e) => onSearch && onSearch(e.target.value)}
-                    className="w-full bg-dark-bg/50 border border-white/10 rounded-full py-2.5 pl-12 pr-4 text-white outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all"
+                    className="bg-transparent text-white placeholder-gray-500 text-sm outline-none w-full"
                 />
             </div>
 
-            {/* RIGHT ACTIONS */}
-            <div className="flex items-center gap-6">
-
-                {/* NOTIFICATIONS */}
-                <button className="relative p-2 text-gray-400 hover:text-white transition-colors group">
-                    <FaBell className="text-xl group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-neon-red rounded-full border-2 border-dark-card"></span>
+            {/* Right Side */}
+            <div className="flex items-center gap-4">
+                {/* Notification Bell */}
+                <button className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                    <FiBell size={16} />
                 </button>
 
-                {/* USER PROFILE */}
-                <div onClick={toggleProfile} className="flex items-center gap-3 cursor-pointer group">
-                    <div className="text-right hidden md:block">
-                        <p className="text-sm font-bold text-white group-hover:text-neon-blue transition-colors">{userInfo?.name || "User"}</p>
-                        <p className="text-xs text-gray-400">{userInfo?.role || "Member"}</p>
+                {/* Profile Button — always clickable */}
+                <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); toggleProfile && toggleProfile(); }}
+                    className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 hover:bg-white/10 transition-all cursor-pointer"
+                >
+                    <FaUserCircle className="text-neon-blue flex-shrink-0" size={24} />
+                    <div className="text-left hidden sm:block">
+                        <p className="text-sm font-medium text-white leading-tight">
+                            {userInfo?.name || "User"}
+                        </p>
+                        <p className="text-xs text-gray-400 leading-tight">
+                            {userInfo?.role || "Member"}
+                        </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neon-purple to-neon-blue p-[2px]">
-                        <div className="w-full h-full rounded-full bg-dark-bg flex items-center justify-center overflow-hidden">
-                            {userInfo?.avatar ? (
-                                <img src={userInfo.avatar} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                <FaUserCircle className="text-2xl text-gray-300" />
-                            )}
-                        </div>
-                    </div>
-                </div>
+                </button>
             </div>
-        </div>
+        </header>
     );
 }

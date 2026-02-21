@@ -4,13 +4,11 @@ import { motion } from "framer-motion";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { FaMapMarkerAlt, FaCar, FaHeart, FaRegHeart, FaClock, FaHistory } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
-import ProfileModal from "../../components/common/ProfileModal";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [showProfile, setShowProfile] = useState(false);
-  const [favorites, setFavorites] = useState([1]); // Mock favorite ID
+  const [favorites, setFavorites] = useState([1]);
 
   // User Profile State
   const [profile, setProfile] = useState({
@@ -19,6 +17,10 @@ export default function UserDashboard() {
     phone: "+91 9876543210",
     role: "USER"
   });
+
+  const handleSaveProfile = (updatedProfile) => {
+    setProfile(updatedProfile);
+  };
 
   const parkings = [
     { id: 1, name: "City Mall Parking", distance: "0.5 km", slots: 5, predictedFree: 8, trend: "up" },
@@ -43,31 +45,15 @@ export default function UserDashboard() {
     }
   };
 
-  const handleSaveProfile = (updatedProfile) => {
-    setProfile(updatedProfile);
-    toast.success("Profile updated successfully!");
-  };
-
-  const handleLogout = () => {
-    navigate("/");
-  };
-
   return (
     <DashboardLayout
       role="USER"
       onSearch={setSearch}
       searchTerm={search}
       userInfo={profile}
-      toggleProfile={() => setShowProfile(true)}
+      onSaveProfile={handleSaveProfile}
     >
       <ToastContainer theme="dark" />
-      <ProfileModal
-        isOpen={showProfile}
-        onClose={() => setShowProfile(false)}
-        user={profile}
-        onSave={handleSaveProfile}
-        onLogout={handleLogout}
-      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 

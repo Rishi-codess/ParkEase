@@ -1,3 +1,4 @@
+import { useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 import { FaBuilding, FaPlus, FaCar, FaMoneyBillWave, FaClock, FaEdit, FaEye } from "react-icons/fa";
@@ -7,6 +8,8 @@ import RevenueChart from "../../components/dashboard/RevenueChart";
 
 function OwnerDashboard() {
   const navigate = useNavigate();
+  const [profile] = useState({ name: "Owner", email: "owner@example.com", phone: "+91 9876543210", role: "OWNER" });
+
 
   const parkings = [
     {
@@ -32,7 +35,10 @@ function OwnerDashboard() {
   ];
 
   return (
-    <DashboardLayout role="OWNER">
+    <DashboardLayout
+      role="OWNER"
+      userInfo={profile}
+    >
       <div className="flex justify-between items-center mb-8">
         <div>
           <h2 className="text-3xl font-bold text-white mb-2">Owner Dashboard</h2>

@@ -37,7 +37,10 @@ function AdminDashboard() {
   };
 
   return (
-    <DashboardLayout role="ADMIN" userInfo={{ name: "Administrator", role: "ADMIN" }}>
+    <DashboardLayout
+      role="ADMIN"
+      userInfo={{ name: "Administrator", role: "ADMIN" }}
+    >
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h2>
         <p className="text-gray-400">Welcome back, Administrator</p>
