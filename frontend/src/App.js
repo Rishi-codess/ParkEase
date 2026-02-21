@@ -8,6 +8,8 @@ import ParkingSlots from "./pages/user/ParkingSlots";
 import BookingHistory from "./pages/user/BookingHistory";
 import PaymentPage from "./pages/user/PaymentPage";
 import ActiveParking from "./pages/user/ActiveParking";
+import FinalBillPage from "./pages/user/FinalBillPage";
+import PaymentsDashboard from "./pages/user/PaymentsDashboard";
 
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import OwnerSlots from "./pages/owner/OwnerSlots";
@@ -15,6 +17,7 @@ import OwnerBookings from "./pages/owner/OwnerBookings";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Placeholder from "./pages/Placeholder";
+
 
 function App() {
     return (
@@ -30,6 +33,8 @@ function App() {
                 <Route path="/user/reservations" element={<BookingHistory />} />
                 <Route path="/user/payment" element={<PaymentPage />} />
                 <Route path="/user/active-parking" element={<ActiveParking />} />
+                <Route path="/user/final-bill" element={<FinalBillPage />} />
+                <Route path="/user/payments" element={<PaymentsDashboard />} />
                 <Route path="/user/settings" element={<Placeholder />} />
 
                 {/* Owner Routes */}
@@ -47,7 +52,6 @@ function App() {
                 <Route path="/live-parking" element={<Placeholder />} />
                 <Route path="/analytics" element={<Placeholder />} />
                 <Route path="/reservations" element={<Placeholder />} />
-                <Route path="/payments" element={<Placeholder />} />
             </Routes>
         </Router>
     );

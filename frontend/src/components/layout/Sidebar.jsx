@@ -43,7 +43,7 @@ export default function Sidebar({ role }) {
             <NavLink className={linkClass} to="/user/bookings">
               <FaHistory className="flex-shrink-0" /> My Bookings
             </NavLink>
-            <NavLink className={linkClass} to="/user/payment">
+            <NavLink className={linkClass} to="/user/payments">
               <FaWallet className="flex-shrink-0" /> Payments
             </NavLink>
           </>

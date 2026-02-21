@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, ToastContainer } from "react-toastify";
@@ -10,12 +10,12 @@ import {
     FaLock,
     FaCheckCircle,
     FaArrowLeft,
-    FaQrcode,
     FaShieldAlt,
     FaParking,
     FaClock,
     FaRupeeSign,
 } from "react-icons/fa";
+
 
 const PAYMENT_TABS = [
     { id: "upi", label: "UPI", icon: FaMobileAlt },
@@ -27,12 +27,22 @@ export default function PaymentPage() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const booking = location.state || {
-        slotId: "N/A",
-        parkingName: "Unknown Parking",
-        duration: 1,
-        ratePerHour: 50,
-        totalAmount: 50,
+    const state = location.state || {};
+    const intent = state.intent || "book";  // "book" | "extend" | "final"
+
+    const booking = {
+        slotId: state.slotId || "N/A",
+        parkingName: state.parkingName || "Unknown Parking",
+        duration: state.duration || 1,
+        ratePerHour: state.ratePerHour || 50,
+        totalAmount: state.totalAmount || 50,
+        bookedAt: state.bookedAt || new Date().toISOString(),
+        // extend-specific
+        currentDuration: state.currentDuration || 1,
+        currentPaid: state.currentPaid || 0,
+        // final-specific
+        baseAmount: state.baseAmount || state.totalAmount || 50,
+        penaltyAmount: state.penaltyAmount || 0,
     };
 
     const [activeTab, setActiveTab] = useState("upi");
@@ -43,6 +53,10 @@ export default function PaymentPage() {
     const [cardName, setCardName] = useState("");
     const [processing, setProcessing] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [selectedExtension, setSelectedExtension] = useState(1); // hours for extend
+
+    const extensionAmount = intent === "extend" ? selectedExtension * booking.ratePerHour : 0;
+    const payableAmount = intent === "extend" ? extensionAmount : booking.totalAmount;
 
     const formatCardNumber = (val) => {
         return val
@@ -81,21 +95,36 @@ export default function PaymentPage() {
 
         setProcessing(true);
 
-        // Simulate payment processing — 2 second mock
-        // ↓↓↓ YOUR BACKEND FRIEND: Replace this setTimeout with a real API call
-        // e.g., await api.post('/bookings/payment', { slotId, amount, paymentMethod })
+        // ↓↓↓ YOUR BACKEND FRIEND: Replace with real API call
+        // e.g., await api.post('/bookings/payment', { intent, slotId, amount, paymentMethod })
         setTimeout(() => {
             setProcessing(false);
             setSuccess(true);
 
-            // Redirect to Active Parking after 1.5s success animation
             setTimeout(() => {
-                navigate("/user/active-parking", {
-                    state: {
-                        ...booking,
-                        bookedAt: new Date().toISOString(),
-                    },
-                });
+                if (intent === "extend") {
+                    // Return to active parking with extended duration
+                    navigate("/user/active-parking", {
+                        state: {
+                            ...booking,
+                            duration: booking.currentDuration + selectedExtension,
+                            totalAmount: booking.currentPaid + extensionAmount,
+                        },
+                    });
+                } else if (intent === "final") {
+                    // Clear debt flag and go to Payments Dashboard
+                    localStorage.removeItem("parkease_account_status");
+                    localStorage.removeItem("parkease_outstanding");
+                    navigate("/user/payments", { replace: true });
+                } else {
+                    // Default: "book" → Start active parking session
+                    navigate("/user/active-parking", {
+                        state: {
+                            ...booking,
+                            bookedAt: new Date().toISOString(),
+                        },
+                    });
+                }
             }, 1500);
         }, 2500);
     };
@@ -121,7 +150,11 @@ export default function PaymentPage() {
                             <FaCheckCircle className="text-neon-green text-5xl" />
                         </motion.div>
                         <h2 className="text-3xl font-black text-white mb-2">Payment Successful!</h2>
-                        <p className="text-gray-400">Redirecting to Active Parking...</p>
+                        <p className="text-gray-400">
+                            {intent === "extend" && "Parking extended! Returning to your session..."}
+                            {intent === "final" && "Dues cleared! Your account is now active."}
+                            {intent === "book" && "Redirecting to Active Parking..."}
+                        </p>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -160,10 +193,10 @@ export default function PaymentPage() {
                                             disabled={disabled}
                                             onClick={() => !disabled && setActiveTab(id)}
                                             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold transition-all ${disabled
-                                                    ? "text-gray-600 cursor-not-allowed"
-                                                    : activeTab === id
-                                                        ? "bg-neon-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]"
-                                                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                                                ? "text-gray-600 cursor-not-allowed"
+                                                : activeTab === id
+                                                    ? "bg-neon-blue text-white shadow-[0_0_15px_rgba(59,130,246,0.4)]"
+                                                    : "text-gray-400 hover:text-white hover:bg-white/5"
                                                 }`}
                                         >
                                             <Icon />
@@ -213,12 +246,12 @@ export default function PaymentPage() {
                                                                 <div
                                                                     key={i}
                                                                     className={`rounded-[1px] ${[
-                                                                            0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 20, 21, 27, 28, 35, 41, 42, 43, 44, 45, 46, 47, 48,
-                                                                            8, 15, 22, 29, 36, 12, 19, 26, 33, 40,
-                                                                            10, 11, 17, 18, 24, 25, 31, 32, 37, 38, 39,
-                                                                        ].includes(i)
-                                                                            ? "bg-[#1a1a2e]"
-                                                                            : "bg-white"
+                                                                        0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 20, 21, 27, 28, 35, 41, 42, 43, 44, 45, 46, 47, 48,
+                                                                        8, 15, 22, 29, 36, 12, 19, 26, 33, 40,
+                                                                        10, 11, 17, 18, 24, 25, 31, 32, 37, 38, 39,
+                                                                    ].includes(i)
+                                                                        ? "bg-[#1a1a2e]"
+                                                                        : "bg-white"
                                                                         }`}
                                                                 />
                                                             ))}
@@ -329,8 +362,8 @@ export default function PaymentPage() {
                                     onClick={handlePayment}
                                     disabled={processing}
                                     className={`w-full mt-8 py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all ${processing
-                                            ? "bg-gray-700 cursor-not-allowed text-gray-400"
-                                            : "bg-gradient-to-r from-neon-blue to-neon-purple text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] active:scale-[0.98]"
+                                        ? "bg-gray-700 cursor-not-allowed text-gray-400"
+                                        : "bg-gradient-to-r from-neon-blue to-neon-purple text-white hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] active:scale-[0.98]"
                                         }`}
                                 >
                                     {processing ? (
