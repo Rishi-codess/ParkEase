@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+import LandingPage from "./pages/Landing_page";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
@@ -18,25 +19,34 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+
+        {/* Landing Page */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Auth Routes */}
+        <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        {/* User Routes */}
         <Route path="/user/dashboard" element={<UserDashboard />} />
         <Route path="/user/slots" element={<ParkingSlots />} />
         <Route path="/user/bookings" element={<BookingHistory />} />
 
+        {/* Owner Routes */}
         <Route path="/owner/dashboard" element={<OwnerDashboard />} />
         <Route path="/owner/slots" element={<OwnerSlots />} />
         <Route path="/owner/bookings" element={<OwnerBookings />} />
 
+        {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
-        {/* Placeholder Routes for Sidebar Links */}
+        {/* Placeholder Routes */}
         <Route path="/live-parking" element={<Placeholder />} />
         <Route path="/analytics" element={<Placeholder />} />
         <Route path="/reservations" element={<Placeholder />} />
         <Route path="/payments" element={<Placeholder />} />
         <Route path="/settings" element={<Placeholder />} />
+
       </Routes>
     </Router>
   );
