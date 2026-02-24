@@ -15,7 +15,8 @@ import OwnerBookings from "./pages/owner/OwnerBookings";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Placeholder from "./pages/Placeholder";
 
-// ✅ ADD THIS IMPORT
+
+// ✅ ADD THIS IMPORt
 import SettingsPage from "./pages/user/Settingspage";
 
 function App() {
@@ -50,10 +51,12 @@ function App() {
         <Route path="/payments" element={<Placeholder />} />
 
 
-        {/* ✅ UPDATED SETTINGS ROUTE */}
-        <Route path="/settings" element={<SettingsPage />} />
 
-        <Route path="/settings" element={<Placeholder />} />
+        {/* ✅ UPDATED SETTINGS ROUTE */}
+        <Route path="/user/settings" element={<SettingsPage />} />
+
+        
+
 
       </Routes>
     </Router>

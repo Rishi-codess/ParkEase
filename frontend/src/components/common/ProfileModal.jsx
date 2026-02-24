@@ -1,140 +1,122 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { FaTimes, FaUserEdit, FaSave, FaSignOutAlt, FaEnvelope, FaPhone } from "react-icons/fa";
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    FaTimes,
+    FaUser,
+    FaEnvelope,
+    FaPhone,
+    FaSignOutAlt,
+    FaSave,
+} from "react-icons/fa";
 
 export default function ProfileModal({ isOpen, onClose, user, onSave, onLogout }) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState(user || {});
+    const [form, setForm] = useState({ name: "", email: "", phone: "" });
 
     useEffect(() => {
-        setFormData(user || {});
+        if (user) setForm({ name: user.name, email: user.email, phone: user.phone });
     }, [user]);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave({ ...user, ...form });
+        onClose();
     };
-
-    const handleSave = () => {
-        onSave(formData);
-        setIsEditing(false);
-    };
-
-    if (!isOpen) return null;
 
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
-                    {/* BACKDROP */}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-end"
+                    />
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                        transition={{ type: "spring", damping: 20 }}
+                        className="relative bg-[#0f1629] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm z-10 overflow-hidden"
                     >
-                        {/* MODAL SLIDE-OVER */}
-                        <motion.div
-                            initial={{ x: "100%" }}
-                            animate={{ x: 0 }}
-                            exit={{ x: "100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-md h-full bg-dark-card border-l border-white/10 shadow-2xl p-8 overflow-y-auto"
-                        >
-                            <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-2xl font-bold text-white">My Profile</h2>
-                                <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white">
+                        <div className="h-1 w-full bg-gradient-to-r from-neon-blue to-neon-purple" />
+                        <div className="p-7">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">Edit Profile</h3>
+                                    <p className="text-gray-500 text-sm">{user?.role}</p>
+                                </div>
+                                <button
+                                    onClick={onClose}
+                                    className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                                >
                                     <FaTimes />
                                 </button>
                             </div>
 
-                            {/* AVATAR SECTION */}
-                            <div className="flex flex-col items-center mb-8">
-                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-neon-purple to-neon-blue p-[3px] mb-4 shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-                                    <div className="w-full h-full rounded-full bg-dark-bg flex items-center justify-center overflow-hidden">
-                                        <span className="text-4xl font-bold text-white">{formData.name?.charAt(0)}</span>
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-1">{formData.name}</h3>
-                                <span className="px-3 py-1 rounded-full bg-neon-purple/20 text-neon-purple text-xs font-bold border border-neon-purple/30">
-                                    Premium Member
-                                </span>
-                            </div>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <Field
+                                    icon={<FaUser />}
+                                    label="Full Name"
+                                    type="text"
+                                    value={form.name}
+                                    onChange={(v) => setForm({ ...form, name: v })}
+                                />
+                                <Field
+                                    icon={<FaEnvelope />}
+                                    label="Email"
+                                    type="email"
+                                    value={form.email}
+                                    onChange={(v) => setForm({ ...form, email: v })}
+                                />
+                                <Field
+                                    icon={<FaPhone />}
+                                    label="Phone"
+                                    type="tel"
+                                    value={form.phone}
+                                    onChange={(v) => setForm({ ...form, phone: v })}
+                                />
 
-                            {/* FORM FIELDS */}
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs text-gray-500 uppercase tracking-widest font-bold ml-1">Full Name</label>
-                                    <div className="relative">
-                                        <input
-                                            name="name"
-                                            disabled={!isEditing}
-                                            value={formData.name || ""}
-                                            onChange={handleChange}
-                                            className={`w-full bg-dark-bg/50 border rounded-xl px-4 py-3 text-white outline-none transition-all ${isEditing ? "border-neon-blue focus:ring-1 focus:ring-neon-blue" : "border-white/10 text-gray-400"}`}
-                                        />
-                                    </div>
-                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-neon-blue to-neon-purple hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all flex items-center justify-center gap-2 mt-2"
+                                >
+                                    <FaSave /> Save Changes
+                                </button>
+                            </form>
 
-                                <div className="space-y-2">
-                                    <label className="text-xs text-gray-500 uppercase tracking-widest font-bold ml-1">Email Address</label>
-                                    <div className="relative">
-                                        <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                                        <input
-                                            name="email"
-                                            disabled={!isEditing}
-                                            value={formData.email || ""}
-                                            onChange={handleChange}
-                                            className={`w-full bg-dark-bg/50 border rounded-xl pl-11 pr-4 py-3 text-white outline-none transition-all ${isEditing ? "border-neon-blue focus:ring-1 focus:ring-neon-blue" : "border-white/10 text-gray-400"}`}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs text-gray-500 uppercase tracking-widest font-bold ml-1">Phone Number</label>
-                                    <div className="relative">
-                                        <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
-                                        <input
-                                            name="phone"
-                                            disabled={!isEditing}
-                                            value={formData.phone || ""}
-                                            onChange={handleChange}
-                                            className={`w-full bg-dark-bg/50 border rounded-xl pl-11 pr-4 py-3 text-white outline-none transition-all ${isEditing ? "border-neon-blue focus:ring-1 focus:ring-neon-blue" : "border-white/10 text-gray-400"}`}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* ACTION BUTTONS */}
-                                <div className="pt-6 space-y-3">
-                                    {isEditing ? (
-                                        <button
-                                            onClick={handleSave}
-                                            className="w-full py-3.5 rounded-xl bg-neon-green text-black font-bold flex items-center justify-center gap-2 hover:bg-green-400 transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)]"
-                                        >
-                                            <FaSave /> Save Changes
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => setIsEditing(true)}
-                                            className="w-full py-3.5 rounded-xl bg-white/5 text-white font-bold flex items-center justify-center gap-2 hover:bg-white/10 border border-white/10 transition-all"
-                                        >
-                                            <FaUserEdit /> Edit Profile
-                                        </button>
-                                    )}
-
-                                    <button
-                                        onClick={onLogout}
-                                        className="w-full py-3.5 rounded-xl bg-neon-red/10 text-neon-red font-bold flex items-center justify-center gap-2 hover:bg-neon-red/20 border border-neon-red/20 transition-all"
-                                    >
-                                        <FaSignOutAlt /> Sign Out
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
+                            <button
+                                onClick={onLogout}
+                                className="w-full mt-3 py-3 rounded-xl font-bold text-neon-red border border-neon-red/20 hover:bg-neon-red/10 transition-all flex items-center justify-center gap-2"
+                            >
+                                <FaSignOutAlt /> Logout
+                            </button>
+                        </div>
                     </motion.div>
-                </>
+                </div>
             )}
         </AnimatePresence>
+    );
+}
+
+function Field({ icon, label, type, value, onChange }) {
+    return (
+        <div>
+            <label className="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1.5">
+                {label}
+            </label>
+            <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                    {icon}
+                </span>
+                <input
+                    type={type}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neon-blue/50 focus:bg-neon-blue/5 transition-all text-sm"
+                />
+            </div>
+        </div>
     );
 }
