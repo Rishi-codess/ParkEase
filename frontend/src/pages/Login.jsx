@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import { motion } from "framer-motion";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaArrowLeft } from "react-icons/fa";
 import AuthBackground from "../components/common/AuthBackground";
 
 export default function Login() {
@@ -33,6 +33,17 @@ export default function Login() {
     <div className="min-h-screen relative flex flex-col items-center justify-center overflow-hidden font-sans">
       <ToastContainer theme="dark" />
       <AuthBackground />
+
+      {/* Back Button */}
+      <motion.button
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        onClick={() => navigate("/")}
+        className="absolute top-8 left-8 z-20 flex items-center gap-2 text-gray-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-lg border border-white/10 backdrop-blur-md"
+      >
+        <FaArrowLeft size={14} />
+        <span className="text-sm font-medium">Back to Home</span>
+      </motion.button>
 
       {/* Main Branding Header */}
       <motion.div
