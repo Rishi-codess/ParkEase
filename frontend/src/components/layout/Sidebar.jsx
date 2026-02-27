@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaCar, FaHistory, FaUsers, FaParking, FaChartBar,
-  FaCog, FaSignOutAlt, FaLock, FaWallet,
+  FaCog, FaSignOutAlt, FaLock, FaWallet, FaPlus,
 } from "react-icons/fa";
 
 const linkClass = ({ isActive }) =>
@@ -60,6 +60,11 @@ export default function Sidebar({ role }) {
             </NavLink>
             <NavLink className={linkClass} to="/owner/bookings">
               <FaHistory className="flex-shrink-0" /> Bookings
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">Quick Actions</p>
+            <NavLink className={linkClass} to="/owner/add-parking">
+              <FaPlus className="flex-shrink-0" /> Add Parking
             </NavLink>
           </>
         )}
