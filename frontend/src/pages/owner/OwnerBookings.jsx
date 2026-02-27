@@ -1,73 +1,68 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
-import { FaSearch, FaClock, FaCar, FaUser, FaTimesCircle } from "react-icons/fa";
+import { FaSearch, FaClock, FaCar, FaUser, FaTimesCircle, FaArrowLeft } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function OwnerBookings() {
+  const { parkingId } = useParams();
+  const navigate = useNavigate();
   const [filter, setFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [slotFilter, setSlotFilter] = useState("ALL");
+  const [parking, setParking] = useState(null);
+  const [bookings, setBookings] = useState([]);
 
-  const bookings = [
-    {
-      id: "BK-2024-001",
-      user: "Rishi",
-      vehicle: "MP09 AB 1234",
-      parking: "City Mall Parking",
-      slot: "A-14",
-      startTime: "2:30 PM",
-      endTime: "5:30 PM",
-      date: "Feb 14, 2026",
-      amount: "$15.00",
-      status: "ACTIVE",
-      type: "Car"
-    },
-    {
-      id: "BK-2024-002",
-      user: "Amit",
-      vehicle: "MH12 CD 5678",
-      parking: "City Mall Parking",
-      slot: "B-22",
-      startTime: "10:00 AM",
-      endTime: "12:00 PM",
-      date: "Feb 14, 2026",
-      amount: "$10.00",
-      status: "COMPLETED",
-      type: "Bike"
-    },
-    {
-      id: "BK-2024-003",
-      user: "Neha",
-      vehicle: "KA01 EF 9012",
-      parking: "Hospital Parking",
-      slot: "H-05",
-      startTime: "09:00 AM",
-      endTime: "06:00 PM",
-      date: "Feb 13, 2026",
-      amount: "$45.00",
-      status: "COMPLETED",
-      type: "Car"
-    },
-    {
-      id: "BK-2024-004",
-      user: "Suresh",
-      vehicle: "DL04 GH 3456",
-      parking: "City Mall Parking",
-      slot: "A-01",
-      startTime: "1:00 PM",
-      endTime: "2:00 PM",
-      date: "Feb 12, 2026",
-      amount: "$5.00",
-      status: "CANCELLED",
-      type: "Car"
-    },
-  ];
+  useEffect(() => {
+    // Load parking info
+    const parkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
+    const found = parkingId ? parkings.find((p) => p.id === parkingId) : null;
+    setParking(found);
+
+    // Load bookings from localStorage (scoped to this parking)
+    let storedBookings = JSON.parse(localStorage.getItem("ownerBookings") || "[]");
+    if (parkingId && found) {
+      storedBookings = storedBookings.filter((b) => b.parkingId === parkingId);
+    }
+
+    // If no bookings exist in localStorage for this parking, seed sample data
+    if (storedBookings.length === 0 && found && found.slots && found.slots.length > 0) {
+      const sampleStatuses = ["ACTIVE", "COMPLETED", "CANCELLED"];
+      const sampleUsers = ["Rishi", "Amit", "Neha", "Suresh"];
+      const sampleVehicles = ["MP09 AB 1234", "MH12 CD 5678", "KA01 EF 9012", "DL04 GH 3456"];
+      const seedBookings = found.slots.slice(0, Math.min(4, found.slots.length)).map((slot, i) => ({
+        id: `BK-${Date.now()}-${i + 1}`,
+        parkingId: found.id,
+        parkingName: found.name,
+        user: sampleUsers[i % sampleUsers.length],
+        vehicle: sampleVehicles[i % sampleVehicles.length],
+        slot: slot.slotId,
+        startTime: `${9 + i}:00 AM`,
+        endTime: `${11 + i}:00 AM`,
+        date: "Feb 26, 2026",
+        amount: `₹${(slot.costPerHour * 2).toFixed(2)}`,
+        status: sampleStatuses[i % sampleStatuses.length],
+        type: slot.vehicleTypeLabel || slot.vehicleType,
+      }));
+      const allBookings = JSON.parse(localStorage.getItem("ownerBookings") || "[]");
+      allBookings.push(...seedBookings);
+      localStorage.setItem("ownerBookings", JSON.stringify(allBookings));
+      storedBookings = seedBookings;
+    }
+
+    setBookings(storedBookings);
+  }, [parkingId]);
+
+  // Get unique slot IDs for filter
+  const slotIds = [...new Set(bookings.map((b) => b.slot))];
 
   const filteredBookings = bookings.filter(b => {
     const matchesFilter = filter === "ALL" || b.status === filter;
+    const matchesSlot = slotFilter === "ALL" || b.slot === slotFilter;
     const matchesSearch = b.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.vehicle.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.id.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return matchesFilter && matchesSearch && matchesSlot;
   });
 
   const getStatusColor = (status) => {
@@ -82,12 +77,24 @@ export default function OwnerBookings() {
   return (
     <DashboardLayout role="OWNER">
       <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Booking Management</h2>
-          <p className="text-gray-400">Track and manage all customer reservations</p>
+        <div className="flex items-center gap-4">
+          {parkingId && (
+            <button
+              onClick={() => navigate("/owner/dashboard")}
+              className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 transition-all"
+            >
+              <FaArrowLeft />
+            </button>
+          )}
+          <div>
+            <h2 className="text-3xl font-bold text-white mb-2">
+              {parking ? `${parking.name} — Bookings` : "Booking Management"}
+            </h2>
+            <p className="text-gray-400">Track and manage all customer reservations</p>
+          </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           {/* SEARCH */}
           <div className="relative">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -100,7 +107,21 @@ export default function OwnerBookings() {
             />
           </div>
 
-          {/* FILTER BUTTONS */}
+          {/* SLOT FILTER */}
+          {slotIds.length > 0 && (
+            <select
+              value={slotFilter}
+              onChange={(e) => setSlotFilter(e.target.value)}
+              className="bg-dark-card border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-neon-blue"
+            >
+              <option value="ALL">All Slots</option>
+              {slotIds.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          )}
+
+          {/* STATUS FILTER BUTTONS */}
           <div className="bg-dark-card border border-white/10 rounded-lg p-1 flex">
             {["ALL", "ACTIVE", "COMPLETED", "CANCELLED"].map(f => (
               <button
@@ -161,7 +182,7 @@ export default function OwnerBookings() {
                     {booking.startTime} - {booking.endTime}
                   </p>
                   <p className="text-sm text-gray-400 mt-1">{booking.date}</p>
-                  <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">{booking.parking} • Slot {booking.slot}</p>
+                  <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">{booking.parkingName || booking.parking} • Slot {booking.slot}</p>
                 </div>
 
                 {/* RIGHT: Status & Actions */}

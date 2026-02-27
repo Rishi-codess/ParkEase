@@ -14,6 +14,8 @@ import PaymentsDashboard from "./pages/user/PaymentsDashboard";
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import OwnerSlots from "./pages/owner/OwnerSlots";
 import OwnerBookings from "./pages/owner/OwnerBookings";
+import AddParking from "./pages/owner/AddParking";
+import ManageParkingSlots from "./pages/owner/ManageParkingSlots";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Placeholder from "./pages/Placeholder";
@@ -39,8 +41,11 @@ function App() {
 
                 {/* Owner Routes */}
                 <Route path="/owner/dashboard" element={<OwnerDashboard />} />
+                <Route path="/owner/add-parking" element={<AddParking />} />
                 <Route path="/owner/slots" element={<OwnerSlots />} />
+                <Route path="/owner/slots/:parkingId" element={<ManageParkingSlots />} />
                 <Route path="/owner/bookings" element={<OwnerBookings />} />
+                <Route path="/owner/bookings/:parkingId" element={<OwnerBookings />} />
                 <Route path="/owner/settings" element={<Placeholder />} />
 
                 {/* Admin Routes */}
