@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import DashboardLayout from "../../components/layout/DashboardLayout";
@@ -22,13 +22,47 @@ export default function UserDashboard() {
     setProfile(updatedProfile);
   };
 
-  const parkings = [
+  const baseParkings = [
     { id: 1, name: "City Mall Parking", distance: "0.5 km", slots: 5, predictedFree: 8, trend: "up" },
     { id: 2, name: "Hospital Parking", distance: "1.2 km", slots: 2, predictedFree: 0, trend: "down" },
     { id: 3, name: "Railway Parking", distance: "2 km", slots: 8, predictedFree: 5, trend: "stable" },
     { id: 4, name: "Airport Terminal 1", distance: "5 km", slots: 15, predictedFree: 12, trend: "up" },
     { id: 5, name: "Downtown Plaza", distance: "1.8 km", slots: 0, predictedFree: 2, trend: "up" },
   ];
+
+  const [parkings, setParkings] = useState(baseParkings);
+
+  useEffect(() => {
+    // Load dynamically created parkings and update slot counts
+    const ownerParkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
+
+    // Merge dynamically added parkings + default ones
+    const mergedParkings = [...baseParkings];
+
+    ownerParkings.forEach(op => {
+      // Find if we already have it internally (e.g. City Mall)
+      // Otherwise add it as new
+      const existingIndex = mergedParkings.findIndex(p => p.id.toString() === op.id.toString() || p.name === op.name);
+
+      const availableSlots = op.slots !== undefined ? op.slots :
+        (op.totalSlots ? (op.totalSlots - (op.occupied || 0)) : 0);
+
+      if (existingIndex >= 0) {
+        mergedParkings[existingIndex].slots = availableSlots;
+      } else {
+        mergedParkings.push({
+          id: op.id || Date.now() + Math.random(),
+          name: op.name,
+          distance: op.location || "2.5 km", // Dummy if none given
+          slots: availableSlots,
+          predictedFree: Math.floor(availableSlots * 0.3),
+          trend: "up"
+        });
+      }
+    });
+
+    setParkings(mergedParkings);
+  }, []);
 
   const filtered = parkings.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase())

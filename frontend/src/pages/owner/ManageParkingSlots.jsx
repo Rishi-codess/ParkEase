@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import {
   FaArrowLeft, FaCar, FaMotorcycle, FaTruck, FaCarSide,
-  FaEdit, FaTimes, FaSave, FaBan, FaCheck,
+  FaEdit, FaTimes, FaSave, FaBan, FaCheck, FaPlus
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -49,6 +49,13 @@ export default function ManageParkingSlots() {
   const [editingSlot, setEditingSlot] = useState(null);
   const [filterType, setFilterType] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newSlotData, setNewSlotData] = useState({
+    slotId: "",
+    vehicleType: "CAR",
+    costPerHour: 50,
+  });
 
   useEffect(() => {
     const parkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
@@ -106,6 +113,37 @@ export default function ManageParkingSlots() {
     setEditingSlot(null);
   };
 
+  const handleAddSlotSubmit = (e) => {
+    e.preventDefault();
+    if (!newSlotData.slotId.trim()) return;
+
+    // Check if slot ID already exists
+    if (slots.some(s => s.slotId === newSlotData.slotId)) {
+      alert("Slot ID already exists in this parking lot!");
+      return;
+    }
+
+    const createdSlot = {
+      slotId: newSlotData.slotId,
+      vehicleType: newSlotData.vehicleType,
+      costPerHour: Number(newSlotData.costPerHour),
+      status: "AVAILABLE",
+      disabled: false,
+      parkingId: parkingId,
+      vehicleTypeLabel: newSlotData.vehicleType.charAt(0) + newSlotData.vehicleType.slice(1).toLowerCase()
+    };
+
+    const updatedSlots = [...slots, createdSlot];
+    saveSlots(updatedSlots);
+
+    setShowAddModal(false);
+    setNewSlotData({
+      slotId: "",
+      vehicleType: "CAR",
+      costPerHour: 50,
+    });
+  };
+
   // Get unique vehicle types from slots
   const vehicleTypes = [...new Set(slots.map((s) => s.vehicleType))];
 
@@ -148,7 +186,13 @@ export default function ManageParkingSlots() {
           </div>
         </div>
 
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-center">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-neon-blue hover:bg-blue-500 text-white font-bold rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.4)] transition-all flex items-center gap-2 mr-4"
+          >
+            <FaPlus /> Add Slot
+          </button>
           {/* Type Filter */}
           <select
             value={filterType}
@@ -167,11 +211,10 @@ export default function ManageParkingSlots() {
               <button
                 key={s}
                 onClick={() => setFilterStatus(s)}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                  filterStatus === s
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filterStatus === s
                     ? "bg-neon-purple text-white"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {s}
               </button>
@@ -211,9 +254,8 @@ export default function ManageParkingSlots() {
                         key={slot.slotId}
                         whileHover={{ scale: 1.05 }}
                         onClick={() => { setSelectedSlot(slot); setEditingSlot(null); }}
-                        className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all relative ${getStatusColor(slot.status, slot.disabled)} ${
-                          selectedSlot?.slotId === slot.slotId ? "ring-2 ring-white scale-105 z-10" : ""
-                        }`}
+                        className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center cursor-pointer transition-all relative ${getStatusColor(slot.status, slot.disabled)} ${selectedSlot?.slotId === slot.slotId ? "ring-2 ring-white scale-105 z-10" : ""
+                          }`}
                       >
                         <span className="text-sm font-bold font-mono">{slot.slotId}</span>
                         <div className="mt-1 text-lg">{vehicleIcon(slot.vehicleType)}</div>
@@ -297,11 +339,10 @@ export default function ManageParkingSlots() {
                           <button
                             key={status}
                             onClick={() => handleStatusChange(selectedSlot.slotId, status)}
-                            className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                              selectedSlot.status === status
+                            className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-all ${selectedSlot.status === status
                                 ? getStatusBadgeColor(status) + " ring-1 ring-white/20"
                                 : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
-                            }`}
+                              }`}
                           >
                             {status}
                           </button>
@@ -338,11 +379,10 @@ export default function ManageParkingSlots() {
                       </button>
                       <button
                         onClick={() => handleToggleDisable(selectedSlot.slotId)}
-                        className={`py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all border ${
-                          selectedSlot.disabled
+                        className={`py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all border ${selectedSlot.disabled
                             ? "bg-neon-green/10 hover:bg-neon-green/20 text-neon-green border-neon-green/20"
                             : "bg-neon-red/10 hover:bg-neon-red/20 text-neon-red border-neon-red/20"
-                        }`}
+                          }`}
                       >
                         {selectedSlot.disabled ? <><FaCheck /> Enable</> : <><FaBan /> Disable</>}
                       </button>
@@ -354,6 +394,85 @@ export default function ManageParkingSlots() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ADD SLOT MODAL */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-dark-card border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-white">Add New Slot</h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <FaTimes size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddSlotSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-gray-400 text-sm mb-1 uppercase tracking-wider font-bold">Slot ID</label>
+                  <input
+                    name="slotId"
+                    value={newSlotData.slotId}
+                    onChange={(e) => setNewSlotData({ ...newSlotData, slotId: e.target.value.toUpperCase() })}
+                    placeholder="e.g. C-12"
+                    required
+                    className="w-full bg-dark-bg border border-white/10 rounded-lg p-3 text-white focus:border-neon-blue outline-none flex items-center font-mono"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-1 uppercase tracking-wider font-bold">Vehicle Type</label>
+                    <select
+                      name="vehicleType"
+                      value={newSlotData.vehicleType}
+                      onChange={(e) => setNewSlotData({ ...newSlotData, vehicleType: e.target.value })}
+                      className="w-full bg-dark-bg border border-white/10 rounded-lg p-3 text-white focus:border-neon-blue outline-none"
+                    >
+                      <option value="CAR">Car</option>
+                      <option value="BIKE">Bike</option>
+                      <option value="LARGE">Large</option>
+                      <option value="SMALL">Small</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-1 uppercase tracking-wider font-bold">Price / hr</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</span>
+                      <input
+                        type="number"
+                        name="costPerHour"
+                        min="1"
+                        value={newSlotData.costPerHour}
+                        onChange={(e) => setNewSlotData({ ...newSlotData, costPerHour: e.target.value })}
+                        required
+                        className="w-full bg-dark-bg border border-white/10 rounded-lg pl-8 p-3 text-white focus:border-neon-blue outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6">
+                  <button
+                    type="submit"
+                    className="w-full py-4 rounded-xl bg-neon-green hover:bg-green-400 text-black font-bold transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)] text-lg flex items-center justify-center gap-2"
+                  >
+                    <FaPlus /> Save Slot
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </DashboardLayout>
   );
 }

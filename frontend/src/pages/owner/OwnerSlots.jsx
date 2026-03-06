@@ -1,32 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
-import { FaPlus, FaCar, FaMotorcycle, FaTimes, FaTrash } from "react-icons/fa";
+import { FaPlus, FaCar, FaMotorcycle, FaTimes, FaTrash, FaTruck } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function OwnerSlots() {
+  const { parkingId } = useParams();
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [slots, setSlots] = useState([
-    { id: "A-01", type: "Car", status: "OCCUPIED", vehicle: "MP09 AB 1234", user: "Rishi", time: "2:30 PM", floor: "1" },
-    { id: "A-02", type: "Car", status: "AVAILABLE", floor: "1" },
-    { id: "A-03", type: "Car", status: "RESERVED", vehicle: "Future Booking", user: "Amit", time: "6:00 PM", floor: "1" },
-    { id: "A-04", type: "Car", status: "AVAILABLE", floor: "1" },
-    { id: "B-01", type: "Bike", status: "OCCUPIED", vehicle: "MH12 CD 5678", user: "Neha", time: "10:00 AM", floor: "2" },
-    { id: "B-02", type: "Bike", status: "AVAILABLE", floor: "2" },
-    { id: "B-03", type: "Bike", status: "AVAILABLE", floor: "2" },
-    { id: "B-04", type: "Bike", status: "MAINTENANCE", floor: "2" },
-  ]);
+  const [slots, setSlots] = useState([]);
+
+  useEffect(() => {
+    // Attempt to load slots for this specific parking from localStorage
+    const savedSlots = localStorage.getItem(`slots_${parkingId || 'default'}`);
+    if (savedSlots) {
+      setSlots(JSON.parse(savedSlots));
+    } else {
+      // Default mock slots if none exist
+      const defaultSlots = [
+        { id: "A-01", type: "Car", status: "OCCUPIED", vehicle: "MP09 AB 1234", user: "Rishi", time: "2:30 PM", floor: "1" },
+        { id: "A-02", type: "Car", status: "AVAILABLE", floor: "1" },
+        { id: "A-03", type: "Car", status: "RESERVED", vehicle: "Future Booking", user: "Amit", time: "6:00 PM", floor: "1" },
+        { id: "A-04", type: "Car", status: "AVAILABLE", floor: "1" },
+        { id: "B-01", type: "Bike", status: "OCCUPIED", vehicle: "MH12 CD 5678", user: "Neha", time: "10:00 AM", floor: "2" },
+        { id: "B-02", type: "Bike", status: "AVAILABLE", floor: "2" },
+        { id: "B-03", type: "Bike", status: "AVAILABLE", floor: "2" },
+        { id: "B-04", type: "Bike", status: "MAINTENANCE", floor: "2" },
+      ];
+      setSlots(defaultSlots);
+      localStorage.setItem(`slots_${parkingId || 'default'}`, JSON.stringify(defaultSlots));
+    }
+  }, [parkingId]);
 
   const handleAddSlot = (e) => {
     e.preventDefault();
-    // Mock addition
     const newSlot = {
       id: e.target.slotId.value,
       type: e.target.type.value,
       floor: e.target.floor.value,
       status: "AVAILABLE"
     };
-    setSlots([...slots, newSlot]);
+
+    const updatedSlots = [...slots, newSlot];
+    setSlots(updatedSlots);
+    localStorage.setItem(`slots_${parkingId || 'default'}`, JSON.stringify(updatedSlots));
+
+    // Also update the total slots and available slots count in ownerParkings for UserDashboard
+    if (parkingId) {
+      const parkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
+      const updatedParkings = parkings.map(p => {
+        if (p.id.toString() === parkingId.toString()) {
+          return {
+            ...p,
+            totalSlots: (p.totalSlots || 0) + 1,
+            slots: (p.slots || 0) + 1 // Treat 'slots' as available slots count for UserDashboard
+          };
+        }
+        return p;
+      });
+      localStorage.setItem("ownerParkings", JSON.stringify(updatedParkings));
+    }
+
     setShowAddModal(false);
   };
 
@@ -79,7 +113,7 @@ export default function OwnerSlots() {
                 >
                   <span className="text-lg font-bold">{slot.id}</span>
                   <div className="mt-1">
-                    {slot.type === "Car" ? <FaCar /> : <FaMotorcycle />}
+                    {slot.type === "Car" ? <FaCar /> : slot.type === "Bike" ? <FaMotorcycle /> : slot.type === "Large" ? <FaTruck /> : <FaCar size={12} />}
                   </div>
                   {slot.status === "OCCUPIED" && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl backdrop-blur-[1px]">
@@ -101,7 +135,7 @@ export default function OwnerSlots() {
                 >
                   <span className="text-lg font-bold">{slot.id}</span>
                   <div className="mt-1">
-                    {slot.type === "Car" ? <FaCar /> : <FaMotorcycle />}
+                    {slot.type === "Car" ? <FaCar /> : slot.type === "Bike" ? <FaMotorcycle /> : slot.type === "Large" ? <FaTruck /> : <FaCar size={12} />}
                   </div>
                 </motion.div>
               ))}
@@ -122,7 +156,7 @@ export default function OwnerSlots() {
                 <button onClick={() => setSelectedSlot(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><FaTimes /></button>
 
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl mb-4 ${getStatusColor(selectedSlot.status).replace("hover:", "")}`}>
-                  {selectedSlot.type === "Car" ? <FaCar /> : <FaMotorcycle />}
+                  {selectedSlot.type === "Car" ? <FaCar /> : selectedSlot.type === "Bike" ? <FaMotorcycle /> : selectedSlot.type === "Large" ? <FaTruck /> : <FaCar size={20} />}
                 </div>
 
                 <h3 className="text-3xl font-bold text-white mb-1">Slot {selectedSlot.id}</h3>
@@ -155,7 +189,30 @@ export default function OwnerSlots() {
                   <button className="py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all text-sm font-bold flex items-center justify-center gap-2">
                     Maintenance
                   </button>
-                  <button className="py-2 rounded-lg bg-neon-red/10 hover:bg-neon-red/20 text-neon-red border border-neon-red/20 transition-all text-sm font-bold flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => {
+                      const updatedSlots = slots.filter(s => s.id !== selectedSlot.id);
+                      setSlots(updatedSlots);
+                      localStorage.setItem(`slots_${parkingId || 'default'}`, JSON.stringify(updatedSlots));
+
+                      if (parkingId) {
+                        const parkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
+                        const updatedParkings = parkings.map(p => {
+                          if (p.id.toString() === parkingId.toString()) {
+                            return {
+                              ...p,
+                              totalSlots: Math.max(0, (p.totalSlots || 0) - 1),
+                              slots: selectedSlot.status === 'AVAILABLE' ? Math.max(0, (p.slots || 0) - 1) : (p.slots || 0)
+                            };
+                          }
+                          return p;
+                        });
+                        localStorage.setItem("ownerParkings", JSON.stringify(updatedParkings));
+                      }
+                      setSelectedSlot(null);
+                    }}
+                    className="py-2 rounded-lg bg-neon-red/10 hover:bg-neon-red/20 text-neon-red border border-neon-red/20 transition-all text-sm font-bold flex items-center justify-center gap-2"
+                  >
                     <FaTrash /> Remove
                   </button>
                 </div>
@@ -187,6 +244,8 @@ export default function OwnerSlots() {
                     <select name="type" className="w-full bg-dark-bg border border-white/10 rounded-lg p-3 text-white focus:border-neon-blue outline-none">
                       <option value="Car">Car</option>
                       <option value="Bike">Bike</option>
+                      <option value="Large">Large</option>
+                      <option value="Small">Small</option>
                     </select>
                   </div>
                   <div>
