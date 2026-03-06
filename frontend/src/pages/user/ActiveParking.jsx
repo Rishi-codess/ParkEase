@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast, ToastContainer } from "react-toastify";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import {
     FaCheckCircle, FaParking, FaClock, FaRupeeSign,
@@ -8,73 +9,78 @@ import {
     FaPlus, FaStop, FaSkullCrossbones,
 } from "react-icons/fa";
 
-const FALLBACK_BOOKED_AT = new Date().toISOString();
 const PENALTY_PER_INTERVAL = 10;      // ₹10
 const PENALTY_INTERVAL_MS = 15 * 60 * 1000; // 15 min
 
-function useCountdown(targetTimeMs) {
+export default function ActiveParking() {
+    const navigate = useNavigate();
+
+    // Load booking from localStorage
+    const [booking, setBooking] = useState(null);
     const [timeLeft, setTimeLeft] = useState(0);
+    const [expired, setExpired] = useState(false);
+    const [penaltyAmount, setPenaltyAmount] = useState(0);
+    const [overtimeMs, setOvertimeMs] = useState(0);
+
     useEffect(() => {
-        const update = () => setTimeLeft(Math.max(0, targetTimeMs - Date.now()));
-        update();
-        const id = setInterval(update, 1000);
-        return () => clearInterval(id);
-    }, [targetTimeMs]);
+        const storedBooking = localStorage.getItem("parkease_active_booking");
+        if (!storedBooking) {
+            toast.error("No active parking session found");
+            setTimeout(() => navigate("/user/dashboard"), 1500);
+            return;
+        }
+        setBooking(JSON.parse(storedBooking));
+    }, [navigate]);
+
+    useEffect(() => {
+        if (!booking) return;
+
+        const interval = setInterval(() => {
+            const now = Date.now();
+            const endTime = new Date(booking.endTime).getTime();
+            const remaining = endTime - now;
+
+            if (remaining > 0) {
+                setTimeLeft(remaining);
+                setExpired(false);
+                setPenaltyAmount(0);
+                setOvertimeMs(0);
+            } else {
+                // Overtime!
+                setTimeLeft(0);
+                setExpired(true);
+                const overtime = Math.abs(remaining);
+                setOvertimeMs(overtime);
+                const intervals = Math.floor(overtime / PENALTY_INTERVAL_MS);
+                setPenaltyAmount(intervals * PENALTY_PER_INTERVAL);
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [booking]);
+
+    if (!booking) {
+        return (
+            <DashboardLayout role="USER">
+                <div className="flex items-center justify-center h-96">
+                    <div className="animate-spin w-12 h-12 border-4 border-neon-blue border-t-transparent rounded-full"></div>
+                </div>
+            </DashboardLayout>
+        );
+    }
+
+    // Calculate display values
     const hours = Math.floor(timeLeft / 3600000);
     const mins = Math.floor((timeLeft % 3600000) / 60000);
     const secs = Math.floor((timeLeft % 60000) / 1000);
-    return { hours, mins, secs, expired: timeLeft === 0 };
-}
 
-export default function ActiveParking() {
-    const navigate = useNavigate();
-    const location = useLocation();
+    const overtimeHours = Math.floor(overtimeMs / 3600000);
+    const overtimeMins = Math.floor((overtimeMs % 3600000) / 60000);
+    const overtimeSecs = Math.floor((overtimeMs % 60000) / 1000);
 
-    const booking = useMemo(() => location.state || {
-        slotId: "A-01",
-        parkingName: "City Mall Parking",
-        duration: 1,
-        totalAmount: 50,
-        ratePerHour: 50,
-        bookedAt: FALLBACK_BOOKED_AT,
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const startTime = new Date(booking.startTime);
+    const endTime = new Date(booking.endTime);
 
-    // Total duration may grow when user extends parking
-    const [totalDuration] = useState(booking.duration || 1);
-    const [totalPaid] = useState(booking.totalAmount || 50);
-
-    const bookedAt = useMemo(() => new Date(booking.bookedAt), [booking.bookedAt]);
-    const expiresAtMs = useMemo(
-        () => bookedAt.getTime() + totalDuration * 3600000,
-        [bookedAt, totalDuration]
-    );
-
-    const { hours, mins, secs, expired } = useCountdown(expiresAtMs);
-
-    // ── Overtime / penalty tracking ──────────────────────────────────────────
-    const overtimeStartRef = useRef(null);
-    const [penaltyAmount, setPenaltyAmount] = useState(0);
-    const [overtimeDisplay, setOvertimeDisplay] = useState({ h: 0, m: 0, s: 0 });
-
-    useEffect(() => {
-        if (!expired) { overtimeStartRef.current = null; return; }
-        if (!overtimeStartRef.current) overtimeStartRef.current = Date.now();
-
-        const id = setInterval(() => {
-            const overMs = Date.now() - overtimeStartRef.current;
-            const intervals = Math.floor(overMs / PENALTY_INTERVAL_MS);
-            setPenaltyAmount(intervals * PENALTY_PER_INTERVAL);
-            setOvertimeDisplay({
-                h: Math.floor(overMs / 3600000),
-                m: Math.floor((overMs % 3600000) / 60000),
-                s: Math.floor((overMs % 60000) / 1000),
-            });
-        }, 1000);
-        return () => clearInterval(id);
-    }, [expired]);
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
     const fmt = (d) =>
         d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
 
@@ -88,30 +94,59 @@ export default function ActiveParking() {
                 slotId: booking.slotId,
                 parkingName: booking.parkingName,
                 ratePerHour: booking.ratePerHour || 50,
-                currentDuration: totalDuration,
-                currentPaid: totalPaid,
-                bookedAt: booking.bookedAt,
+                currentDuration: booking.duration,
+                currentPaid: booking.totalPaid,
             },
         });
     };
 
     const handleEndParking = () => {
-        navigate("/user/final-bill", {
-            state: {
-                booking: { ...booking, duration: totalDuration },
-                baseAmount: totalPaid,
-                penaltyAmount,
-                overtimeDisplay,
-            },
-        });
+        if (penaltyAmount > 0) {
+            // Has penalty - navigate to final bill
+            navigate("/user/final-bill", {
+                state: {
+                    booking: booking,
+                    baseAmount: booking.totalPaid,
+                    penaltyAmount,
+                    overtimeDisplay: { h: overtimeHours, m: overtimeMins, s: overtimeSecs },
+                },
+            });
+        } else {
+            // No penalty - end parking successfully
+            const bookingHistory = JSON.parse(localStorage.getItem("parkease_booking_history") || "[]");
+            bookingHistory.push({
+                ...booking,
+                endedAt: new Date().toISOString(),
+                status: "COMPLETED",
+                finalAmount: booking.totalPaid,
+            });
+            localStorage.setItem("parkease_booking_history", JSON.stringify(bookingHistory));
+            localStorage.removeItem("parkease_active_booking");
+            toast.success("Parking ended successfully! No additional charges.");
+            setTimeout(() => navigate("/user/dashboard"), 1500);
+        }
     };
 
     const slotBadge = expired
         ? { label: "OVERDUE", cls: "bg-neon-red/20 text-neon-red border-neon-red/30" }
         : { label: "LOCKED", cls: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" };
 
+    const totalDurationHours = booking.duration;
+    const expiresAtMs = new Date(booking.endTime).getTime();
+
     return (
-        <DashboardLayout role="USER">
+        <>
+            <ToastContainer 
+                theme="dark" 
+                position="top-right"
+                autoClose={3000}
+                style={{
+                    zIndex: 9999,
+                    top: '5rem',
+                    right: '1rem'
+                }}
+            />
+            <DashboardLayout role="USER">
             <div className="max-w-2xl mx-auto">
 
                 {/* ── Success Banner ─────────────────────────────────── */}
@@ -157,7 +192,7 @@ export default function ActiveParking() {
                                 </p>
                                 <div className="flex items-center gap-4 mt-2">
                                     <span className="text-white text-sm font-mono">
-                                        Overtime: {String(overtimeDisplay.h).padStart(2, "0")}:{String(overtimeDisplay.m).padStart(2, "0")}:{String(overtimeDisplay.s).padStart(2, "0")}
+                                        Overtime: {String(overtimeHours).padStart(2, "0")}:{String(overtimeMins).padStart(2, "0")}:{String(overtimeSecs).padStart(2, "0")}
                                     </span>
                                     <span className="px-3 py-1 bg-neon-red/20 rounded-full text-neon-red font-black text-sm border border-neon-red/30">
                                         Penalty: ₹{penaltyAmount}
@@ -192,14 +227,14 @@ export default function ActiveParking() {
                                 label="Slot ID"
                                 value={<span className="font-mono text-neon-purple font-black">{booking.slotId}</span>}
                             />
-                            <InfoTile icon={<FaCalendarAlt className="text-gray-400 text-lg" />} label="Started At" value={fmt(bookedAt)} />
-                            <InfoTile icon={<FaClock className="text-yellow-400 text-lg" />} label="Expires At" value={fmt(new Date(expiresAtMs))} />
+                            <InfoTile icon={<FaCalendarAlt className="text-gray-400 text-lg" />} label="Started At" value={fmt(startTime)} />
+                            <InfoTile icon={<FaClock className="text-yellow-400 text-lg" />} label="Expires At" value={fmt(endTime)} />
                             <InfoTile
                                 icon={<FaRupeeSign className="text-neon-green text-lg" />}
                                 label="Total Paid"
-                                value={<span className="text-neon-green font-black">₹{totalPaid}</span>}
+                                value={<span className="text-neon-green font-black">₹{booking.totalPaid}</span>}
                             />
-                            <InfoTile icon={<FaClock className="text-neon-blue text-lg" />} label="Duration" value={`${totalDuration}h`} />
+                            <InfoTile icon={<FaClock className="text-neon-blue text-lg" />} label="Duration" value={`${totalDurationHours}h`} />
                         </div>
 
                         {/* ── Live Timer ─────────────────────────────── */}
@@ -218,7 +253,7 @@ export default function ActiveParking() {
                                         className={`h-full rounded-full ${hours === 0 && mins < 15 ? "bg-yellow-400" : "bg-neon-green"}`}
                                         initial={{ width: "100%" }}
                                         animate={{
-                                            width: `${Math.max(0, ((expiresAtMs - Date.now()) / (totalDuration * 3600000)) * 100).toFixed(1)}%`,
+                                            width: `${Math.max(0, ((expiresAtMs - Date.now()) / (totalDurationHours * 3600000)) * 100).toFixed(1)}%`,
                                         }}
                                         transition={{ duration: 1 }}
                                     />
@@ -251,7 +286,7 @@ export default function ActiveParking() {
                             : "bg-gradient-to-r from-neon-red/80 to-neon-red text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]"
                             }`}
                     >
-                        <FaStop /> End Parking
+                        <FaStop /> {expired ? "End & Pay Penalty" : "End Parking"}
                     </button>
                 </motion.div>
 
@@ -268,6 +303,7 @@ export default function ActiveParking() {
                 )}
             </div>
         </DashboardLayout>
+        </>
     );
 }
 

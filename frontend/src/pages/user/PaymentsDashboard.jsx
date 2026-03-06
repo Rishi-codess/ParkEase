@@ -59,12 +59,15 @@ export default function PaymentsDashboard() {
     // Read account status from localStorage (set by FinalBillPage Pay Later)
     const [accountStatus, setAccountStatus] = useState("ACTIVE");
     const [outstanding, setOutstanding] = useState(0);
+    const [warnings, setWarnings] = useState([]);
 
     useEffect(() => {
         const status = localStorage.getItem("parkease_account_status") || "ACTIVE";
         const owed = Number(localStorage.getItem("parkease_outstanding") || 0);
+        const warningsData = JSON.parse(localStorage.getItem("parkease_warnings") || "[]");
         setAccountStatus(status);
         setOutstanding(owed);
+        setWarnings(warningsData);
     }, []);
 
     const clearDues = () => {
@@ -75,6 +78,19 @@ export default function PaymentsDashboard() {
                 parkingName: "Outstanding Dues",
                 duration: 0,
                 totalAmount: outstanding,
+            },
+        });
+    };
+
+    const payPenalty = (warning) => {
+        navigate("/user/payment", {
+            state: {
+                intent: "final",
+                slotId: warning.slotId,
+                parkingName: warning.parkingName,
+                duration: 0,
+                totalAmount: warning.amount,
+                penaltyAmount: warning.amount,
             },
         });
     };
@@ -250,6 +266,92 @@ export default function PaymentsDashboard() {
                         ))}
                     </div>
                 </Section>
+
+                {/* ── Section E: Warnings & Penalties ───────────────── */}
+                {warnings.length > 0 && (
+                    <Section title={`Penalty Warnings (${warnings.length}/5)`} icon={<FaBan />}>
+                        <div className="space-y-3">
+                            {/* Warning Counter */}
+                            <div className={`p-4 rounded-xl border ${warnings.length >= 5
+                                ? "bg-neon-red/10 border-neon-red/30"
+                                : warnings.length >= 3
+                                    ? "bg-yellow-500/10 border-yellow-500/30"
+                                    : "bg-neon-blue/10 border-neon-blue/30"
+                                }`}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className={`font-black text-sm ${warnings.length >= 5
+                                            ? "text-neon-red"
+                                            : warnings.length >= 3
+                                                ? "text-yellow-400"
+                                                : "text-neon-blue"
+                                            }`}>
+                                            {warnings.length >= 5
+                                                ? "⚠️ MAXIMUM WARNINGS REACHED"
+                                                : warnings.length >= 3
+                                                    ? "⚠️ HIGH WARNING COUNT"
+                                                    : "Active Warnings"}
+                                        </p>
+                                        <p className="text-gray-400 text-xs mt-1">
+                                            {warnings.length >= 5
+                                                ? "Your account may be blocked by admin. Pay all penalties immediately."
+                                                : `You have ${5 - warnings.length} warning${5 - warnings.length !== 1 ? 's' : ''} remaining before potential account suspension.`
+                                            }
+                                        </p>
+                                    </div>
+                                    <div className={`w-16 h-16 rounded-full border-4 flex items-center justify-center font-black text-xl ${warnings.length >= 5
+                                        ? "border-neon-red text-neon-red bg-neon-red/10"
+                                        : warnings.length >= 3
+                                            ? "border-yellow-400 text-yellow-400 bg-yellow-500/10"
+                                            : "border-neon-blue text-neon-blue bg-neon-blue/10"
+                                        }`}>
+                                        {warnings.length}/5
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Warning List */}
+                            {warnings.map((warning) => (
+                                <motion.div
+                                    key={warning.id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="bg-dark-card/60 border border-white/5 rounded-2xl p-5"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-neon-red/20 border border-neon-red/30 flex items-center justify-center">
+                                                <FaExclamationTriangle className="text-neon-red" />
+                                            </div>
+                                            <div>
+                                                <p className="text-white font-semibold text-sm">{warning.parkingName}</p>
+                                                <p className="text-gray-500 text-xs mt-0.5">
+                                                    Slot #{warning.slotId} · {new Date(warning.date).toLocaleDateString("en-IN", {
+                                                        day: "numeric",
+                                                        month: "short",
+                                                        year: "numeric"
+                                                    })}
+                                                </p>
+                                                <span className="inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-neon-red/20 text-neon-red border border-neon-red/30">
+                                                    {warning.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-neon-red font-black text-lg">₹{warning.amount}</span>
+                                            <button
+                                                onClick={() => payPenalty(warning)}
+                                                className="px-4 py-2 bg-neon-red text-white rounded-xl font-bold text-sm hover:bg-red-500 transition-all"
+                                            >
+                                                Pay Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </Section>
+                )}
             </div>
         </DashboardLayout>
     );

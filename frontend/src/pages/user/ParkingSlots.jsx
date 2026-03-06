@@ -58,8 +58,18 @@ export default function ParkingSlots() {
   };
 
   return (
-    <DashboardLayout role="USER" title="Select Slot">
-      <ToastContainer theme="dark" />
+    <>
+      <ToastContainer 
+        theme="dark" 
+        position="top-right"
+        autoClose={3000}
+        style={{
+          zIndex: 9999,
+          top: '5rem',
+          right: '1rem'
+        }}
+      />
+      <DashboardLayout role="USER" title="Select Slot">
 
       <div className="flex flex-col h-full">
 
@@ -141,5 +151,6 @@ export default function ParkingSlots() {
         />
       )}
     </DashboardLayout>
+    </>
   );
 }

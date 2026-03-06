@@ -103,35 +103,75 @@ export default function PaymentPage() {
 
             setTimeout(() => {
                 if (intent === "extend") {
-                    // Return to active parking with extended duration
-                    navigate("/user/active-parking", {
-                        state: {
-                            ...booking,
-                            duration: booking.currentDuration + selectedExtension,
-                            totalAmount: booking.currentPaid + extensionAmount,
-                        },
-                    });
+                    // Extend parking: Update endTime in localStorage
+                    const activeBooking = JSON.parse(localStorage.getItem("parkease_active_booking") || "{}");
+                    const newEndTime = new Date(activeBooking.endTime);
+                    newEndTime.setHours(newEndTime.getHours() + selectedExtension);
+                    
+                    const updatedBooking = {
+                        ...activeBooking,
+                        duration: activeBooking.duration + selectedExtension,
+                        endTime: newEndTime.toISOString(),
+                        totalPaid: activeBooking.totalPaid + extensionAmount,
+                    };
+                    localStorage.setItem("parkease_active_booking", JSON.stringify(updatedBooking));
+                    
+                    navigate("/user/active-parking", { replace: true });
                 } else if (intent === "final") {
-                    // Clear debt flag and go to Payments Dashboard
+                    // Penalty payment: Clear warnings and debt
+                    const warnings = JSON.parse(localStorage.getItem("parkease_warnings") || "[]");
+                    const penaltyHistory = JSON.parse(localStorage.getItem("parkease_penalty_history") || "[]");
+                    
+                    penaltyHistory.push({
+                        id: Date.now(),
+                        amount: payableAmount,
+                        paidAt: new Date().toISOString(),
+                        parkingName: booking.parkingName,
+                        slotId: booking.slotId,
+                    });
+                    
+                    localStorage.setItem("parkease_penalty_history", JSON.stringify(penaltyHistory));
                     localStorage.removeItem("parkease_account_status");
                     localStorage.removeItem("parkease_outstanding");
+                    localStorage.removeItem("parkease_active_booking");
+                    
                     navigate("/user/payments", { replace: true });
                 } else {
-                    // Default: "book" → Start active parking session
-                    navigate("/user/active-parking", {
-                        state: {
-                            ...booking,
-                            bookedAt: new Date().toISOString(),
-                        },
-                    });
+                    // Initial booking: Store in localStorage
+                    const startTime = new Date();
+                    const endTime = new Date(startTime.getTime() + booking.duration * 60 * 60 * 1000);
+                    
+                    const activeBooking = {
+                        slotId: booking.slotId,
+                        parkingName: booking.parkingName,
+                        duration: booking.duration,
+                        ratePerHour: booking.ratePerHour,
+                        totalPaid: booking.totalAmount,
+                        startTime: startTime.toISOString(),
+                        endTime: endTime.toISOString(),
+                        bookingId: `BK-${Date.now()}`,
+                    };
+                    
+                    localStorage.setItem("parkease_active_booking", JSON.stringify(activeBooking));
+                    navigate("/user/active-parking", { replace: true });
                 }
             }, 1500);
         }, 2500);
     };
 
     return (
-        <DashboardLayout role="USER">
-            <ToastContainer theme="dark" />
+        <>
+            <ToastContainer 
+                theme="dark" 
+                position="top-right"
+                autoClose={3000}
+                style={{
+                    zIndex: 9999,
+                    top: '5rem',
+                    right: '1rem'
+                }}
+            />
+            <DashboardLayout role="USER">
 
             {/* Success Overlay */}
             <AnimatePresence>
@@ -450,6 +490,7 @@ export default function PaymentPage() {
                 </div>
             </div>
         </DashboardLayout>
+        </>
     );
 }
 
