@@ -7,6 +7,10 @@ import Register from "./pages/Register";
 import UserDashboard from "./pages/user/UserDashboard";
 import ParkingSlots from "./pages/user/ParkingSlots";
 import BookingHistory from "./pages/user/BookingHistory";
+import PaymentsDashboard from "./pages/user/PaymentsDashboard";
+import PaymentPage from "./pages/user/PaymentPage";
+import ActiveParking from "./pages/user/ActiveParking";
+import FinalBillPage from "./pages/user/FinalBillPage";
 
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import OwnerSlots from "./pages/owner/OwnerSlots";
@@ -37,6 +41,10 @@ function App() {
         <Route path="/user/bookings" element={<BookingHistory />} />
         <Route path="/user/reservations" element={<BookingHistory />} />
         <Route path="/user/settings" element={<SettingsPage />} />
+        <Route path="/user/payments" element={<PaymentsDashboard />} />
+        <Route path="/user/payment" element={<PaymentPage />} />
+        <Route path="/user/active-parking" element={<ActiveParking />} />
+        <Route path="/user/final-bill" element={<FinalBillPage />} />
 
         {/* Owner Routes */}
         <Route path="/owner/dashboard" element={<OwnerDashboard />} />
