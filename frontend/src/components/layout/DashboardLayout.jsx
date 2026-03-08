@@ -1,4 +1,4 @@
-import Sidebar from "../Sidebar";
+import Sidebar from "./Sidebar";
 import TopBar from "../common/TopBar";
 
 export default function DashboardLayout({ children, role, onSearch, searchTerm, userInfo, toggleProfile }) {
