@@ -15,6 +15,11 @@ const plainClass =
 
 export default function Sidebar({ role }) {
   const navigate = useNavigate();
+  const settingsRoute = role === "OWNER"
+    ? "/owner/settings"
+    : role === "ADMIN"
+      ? "/admin/settings"
+      : "/user/settings";
 
   return (
     <aside className="w-64 flex flex-col text-white fixed left-0 top-0 h-full bg-dark-bg border-r border-white/5 z-20">
@@ -78,7 +83,7 @@ export default function Sidebar({ role }) {
 
       {/* Bottom: Settings + Logout */}
       <div className="p-4 border-t border-white/5 space-y-1">
-        <NavLink className={linkClass} to="/settings">
+        <NavLink className={linkClass} to={settingsRoute}>
           <FaCog className="flex-shrink-0" /> Settings
         </NavLink>
         <button onClick={() => navigate("/")} className={plainClass}>

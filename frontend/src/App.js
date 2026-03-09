@@ -40,7 +40,7 @@ function App() {
         <Route path="/user/slots/:parkingId" element={<ParkingSlots />} />
         <Route path="/user/bookings" element={<BookingHistory />} />
         <Route path="/user/reservations" element={<BookingHistory />} />
-        <Route path="/user/settings" element={<SettingsPage />} />
+        <Route path="/user/settings" element={<SettingsPage role="USER" />} />
         <Route path="/user/payments" element={<PaymentsDashboard />} />
         <Route path="/user/payment" element={<PaymentPage />} />
         <Route path="/user/active-parking" element={<ActiveParking />} />
@@ -53,11 +53,11 @@ function App() {
         <Route path="/owner/slots/:parkingId" element={<ManageParkingSlots />} />
         <Route path="/owner/bookings" element={<OwnerBookings />} />
         <Route path="/owner/bookings/:parkingId" element={<OwnerBookings />} />
-        <Route path="/owner/settings" element={<Placeholder />} />
+        <Route path="/owner/settings" element={<SettingsPage role="OWNER" />} />
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/settings" element={<Placeholder />} />
+        <Route path="/admin/settings" element={<SettingsPage role="ADMIN" />} />
 
         {/* Placeholder Routes */}
         <Route path="/settings" element={<Placeholder />} />

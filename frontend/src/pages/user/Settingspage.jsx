@@ -198,11 +198,14 @@ const SecondaryBtn = ({ children, onClick }) => (
 );
 
 // ── TABS ──────────────────────────────────────────────────────────────────────
-const TABS = ["Profile", "Notifications", "Preferences", "Security", "Privacy"];
+const USER_TABS = ["Profile", "Notifications", "Preferences", "Security", "Privacy"];
+const OWNER_TABS = ["Profile", "Operations", "Notifications", "Security"];
+const ADMIN_TABS = ["Profile", "Moderation", "Notifications", "Security"];
 
 // ── Settings Content ──────────────────────────────────────────────────────────
-function SettingsContent() {
-  const [activeTab, setActiveTab] = useState("Profile");
+function SettingsContent({ role = "USER" }) {
+  const tabs = role === "OWNER" ? OWNER_TABS : role === "ADMIN" ? ADMIN_TABS : USER_TABS;
+  const [activeTab, setActiveTab] = useState(tabs[0]);
 
   // Profile
   const [firstName, setFirstName] = useState("Rishi");
@@ -268,7 +271,7 @@ function SettingsContent() {
           marginBottom: 24,
         }}
       >
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -375,6 +378,38 @@ function SettingsContent() {
               <PrimaryBtn>Save Changes</PrimaryBtn>
               <SecondaryBtn>Discard</SecondaryBtn>
             </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ── OWNER OPERATIONS ── */}
+      {role === "OWNER" && activeTab === "Operations" && (
+        <div>
+          <Card title="Parking Operations" subtitle="Configure owner dashboard behavior and lot operations">
+            <Row label="Auto-disable full slots" sublabel="Mark slots unavailable once occupancy reaches limit" right={<Toggle value={true} onChange={() => {}} />} />
+            <Row label="Show live occupancy" sublabel="Display occupancy trends on dashboard cards" right={<Toggle value={true} onChange={() => {}} />} />
+            <Row label="Booking approval mode" sublabel="Instant approval or manual review for incoming bookings" right={<Dropdown value="Instant" onChange={() => {}} options={["Instant", "Manual"]} />} noBorder />
+          </Card>
+
+          <Card title="Revenue & Billing" subtitle="Owner-specific defaults for analytics and billing view">
+            <Row label="Default revenue range" sublabel="Time range shown first in revenue widgets" right={<Dropdown value="This Week" onChange={() => {}} options={["Today", "This Week", "This Month"]} />} />
+            <Row label="Currency" sublabel="Display currency on owner dashboard" right={<Dropdown value="INR (₹)" onChange={() => {}} options={["INR (₹)", "USD ($)", "EUR (€)"]} />} noBorder />
+          </Card>
+        </div>
+      )}
+
+      {/* ── ADMIN MODERATION ── */}
+      {role === "ADMIN" && activeTab === "Moderation" && (
+        <div>
+          <Card title="Moderation Rules" subtitle="Controls for platform-level user and parking governance">
+            <Row label="Auto-flag repeated dues" sublabel="Flag users with repeated unpaid penalties" right={<Toggle value={true} onChange={() => {}} />} />
+            <Row label="Auto-review suspicious activity" sublabel="Send high-risk accounts to admin review queue" right={<Toggle value={true} onChange={() => {}} />} />
+            <Row label="Default suspension threshold" sublabel="Warnings count before account suspension suggestion" right={<Dropdown value="5 Warnings" onChange={() => {}} options={["3 Warnings", "5 Warnings", "7 Warnings"]} />} noBorder />
+          </Card>
+
+          <Card title="System Visibility" subtitle="Admin dashboard alerting and notification preferences">
+            <Row label="Real-time incident alerts" sublabel="Show immediate alerts for blocked users and major issues" right={<Toggle value={true} onChange={() => {}} />} />
+            <Row label="Daily summary report" sublabel="Generate summary email for key platform metrics" right={<Toggle value={false} onChange={() => {}} />} noBorder />
           </Card>
         </div>
       )}
@@ -499,10 +534,10 @@ function SettingsContent() {
 }
 
 // ── Main Export — wrapped in DashboardLayout so sidebar stays ─────────────────
-export default function Settingspage() {
+export default function Settingspage({ role = "USER" }) {
   return (
-    <DashboardLayout role="USER">
-      <SettingsContent />
+    <DashboardLayout role={role}>
+      <SettingsContent role={role} />
     </DashboardLayout>
   );
 }
