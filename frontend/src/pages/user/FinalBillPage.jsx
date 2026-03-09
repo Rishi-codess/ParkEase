@@ -19,7 +19,8 @@ export default function FinalBillPage() {
         overtimeDisplay = { h: 0, m: 0, s: 0 },
     } = location.state || {};
 
-    const totalPayable = baseAmount + penaltyAmount;
+    // Base parking is already paid during booking; final bill should collect only overtime dues.
+    const totalPayable = penaltyAmount;
     const [showWarningModal, setShowWarningModal] = useState(false);
 
     const handlePayNow = () => {
@@ -171,7 +172,7 @@ export default function FinalBillPage() {
                                     ₹{totalPayable}
                                 </span>
                                 {penaltyAmount > 0 && (
-                                    <p className="text-xs text-gray-500 mt-0.5">includes ₹{penaltyAmount} penalty</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">overtime due only</p>
                                 )}
                             </div>
                         </div>
