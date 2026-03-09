@@ -40,21 +40,24 @@ export default function UserDashboard() {
     const mergedParkings = [...baseParkings];
 
     ownerParkings.forEach(op => {
-      // Find if we already have it internally (e.g. City Mall)
-      // Otherwise add it as new
       const existingIndex = mergedParkings.findIndex(p => p.id.toString() === op.id.toString() || p.name === op.name);
 
-      const availableSlots = op.slots !== undefined ? op.slots :
-        (op.totalSlots ? (op.totalSlots - (op.occupied || 0)) : 0);
+      // Compute available count: slots can be an array of objects or a number
+      const availableSlots = Array.isArray(op.slots)
+        ? op.slots.filter(s => s.status === "AVAILABLE" && !s.disabled).length
+        : (typeof op.slots === "number" ? op.slots : (op.totalSlots ? (op.totalSlots - (op.occupied || 0)) : 0));
 
       if (existingIndex >= 0) {
         mergedParkings[existingIndex].slots = availableSlots;
+        mergedParkings[existingIndex].totalSlots = Array.isArray(op.slots) ? op.slots.length : (op.totalSlots || availableSlots);
       } else {
+        const total = Array.isArray(op.slots) ? op.slots.length : (op.totalSlots || availableSlots);
         mergedParkings.push({
           id: op.id || Date.now() + Math.random(),
           name: op.name,
-          distance: op.location || "2.5 km", // Dummy if none given
+          distance: op.location || "2.5 km",
           slots: availableSlots,
+          totalSlots: total,
           predictedFree: Math.floor(availableSlots * 0.3),
           trend: "up"
         });
@@ -154,7 +157,7 @@ export default function UserDashboard() {
 
                   <button
                     disabled={p.slots === 0}
-                    onClick={() => navigate("/user/slots")}
+                    onClick={() => navigate(`/user/slots/${p.id}`)}
                     className={`mt-4 w-full py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${p.slots > 0
                       ? "bg-neon-blue hover:bg-neon-purple text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]"
                       : "bg-gray-700 text-gray-400 cursor-not-allowed"

@@ -37,7 +37,7 @@ function App() {
 
         {/* User Routes */}
         <Route path="/user/dashboard" element={<UserDashboard />} />
-        <Route path="/user/slots" element={<ParkingSlots />} />
+        <Route path="/user/slots/:parkingId" element={<ParkingSlots />} />
         <Route path="/user/bookings" element={<BookingHistory />} />
         <Route path="/user/reservations" element={<BookingHistory />} />
         <Route path="/user/settings" element={<SettingsPage />} />

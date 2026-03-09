@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  FaCar, FaHistory, FaUsers, FaParking, FaChartBar,
+  FaCar, FaHistory, FaUsers, FaChartBar,
   FaCog, FaSignOutAlt, FaLock, FaWallet, FaPlus,
 } from "react-icons/fa";
 
@@ -54,9 +54,6 @@ export default function Sidebar({ role }) {
             <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-1">Management</p>
             <NavLink className={linkClass} to="/owner/dashboard">
               <FaChartBar className="flex-shrink-0" /> Dashboard
-            </NavLink>
-            <NavLink className={linkClass} to="/owner/slots">
-              <FaParking className="flex-shrink-0" /> Manage Slots
             </NavLink>
             <NavLink className={linkClass} to="/owner/bookings">
               <FaHistory className="flex-shrink-0" /> Bookings

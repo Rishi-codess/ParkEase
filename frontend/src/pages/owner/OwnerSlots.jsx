@@ -45,15 +45,19 @@ export default function OwnerSlots() {
     setSlots(updatedSlots);
     localStorage.setItem(`slots_${parkingId || 'default'}`, JSON.stringify(updatedSlots));
 
-    // Also update the total slots and available slots count in ownerParkings for UserDashboard
+    // Also update the ownerParkings entry so dashboards stay in sync
     if (parkingId) {
       const parkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
       const updatedParkings = parkings.map(p => {
         if (p.id.toString() === parkingId.toString()) {
+          const currentSlots = Array.isArray(p.slots) ? p.slots : [];
+          const newSlotObj = { slotId: newSlot.id, vehicleType: newSlot.type, status: "AVAILABLE", disabled: false, costPerHour: 0 };
+          const updatedSlotArr = [...currentSlots, newSlotObj];
           return {
             ...p,
-            totalSlots: (p.totalSlots || 0) + 1,
-            slots: (p.slots || 0) + 1 // Treat 'slots' as available slots count for UserDashboard
+            slots: updatedSlotArr,
+            totalSlots: updatedSlotArr.length,
+            occupied: updatedSlotArr.filter(s => s.status === "OCCUPIED" && !s.disabled).length,
           };
         }
         return p;
@@ -199,10 +203,14 @@ export default function OwnerSlots() {
                         const parkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
                         const updatedParkings = parkings.map(p => {
                           if (p.id.toString() === parkingId.toString()) {
+                            const currentSlots = Array.isArray(p.slots)
+                              ? p.slots.filter(s => s.slotId !== selectedSlot.id)
+                              : [];
                             return {
                               ...p,
-                              totalSlots: Math.max(0, (p.totalSlots || 0) - 1),
-                              slots: selectedSlot.status === 'AVAILABLE' ? Math.max(0, (p.slots || 0) - 1) : (p.slots || 0)
+                              slots: currentSlots,
+                              totalSlots: currentSlots.length,
+                              occupied: currentSlots.filter(s => s.status === "OCCUPIED" && !s.disabled).length,
                             };
                           }
                           return p;

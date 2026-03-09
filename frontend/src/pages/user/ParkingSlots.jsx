@@ -1,23 +1,52 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { FaCar, FaLock, FaBan } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import BookingSummaryModal from "../../components/common/BookingSummaryModal";
 
-
-// Mock parking context — in production this comes from navigation state or API
-const PARKING_NAME = "City Mall Parking";
+// Demo fallback slots when a parking has no real slot data yet
+const DEMO_SLOTS = Array.from({ length: 30 }, (_, i) => ({
+  id: i + 1,
+  slotId: `S-${String(i + 1).padStart(2, "0")}`,
+  status: i % 5 === 0 ? "RESERVED" : i % 3 === 0 ? "BOOKED" : "AVAILABLE",
+}));
 
 export default function ParkingSlots() {
   const navigate = useNavigate();
-  const [slots] = useState(
-    Array.from({ length: 30 }, (_, i) => ({
-      id: i + 1,
-      status: i % 5 === 0 ? "RESERVED" : i % 3 === 0 ? "BOOKED" : "AVAILABLE",
-    }))
-  );
+  const { parkingId } = useParams();
+  const [parkingName, setParkingName] = useState("Parking");
+  const [slots, setSlots] = useState([]);
+
+  useEffect(() => {
+    // Try to load real parking data from localStorage
+    const ownerParkings = JSON.parse(localStorage.getItem("ownerParkings") || "[]");
+    const found = ownerParkings.find(p => String(p.id) === String(parkingId));
+
+    if (found && Array.isArray(found.slots) && found.slots.length > 0) {
+      setParkingName(found.name);
+      setSlots(found.slots.map((s, i) => ({
+        id: i + 1,
+        slotId: s.slotId,
+        status: s.disabled ? "RESERVED" : (s.status || "AVAILABLE"),
+        vehicleType: s.vehicleType,
+        costPerHour: s.costPerHour,
+      })));
+    } else {
+      // Fallback: check baseParkings by id for demo data
+      const baseParkings = [
+        { id: 1, name: "City Mall Parking" },
+        { id: 2, name: "Hospital Parking" },
+        { id: 3, name: "Railway Parking" },
+        { id: 4, name: "Airport Terminal 1" },
+        { id: 5, name: "Downtown Plaza" },
+      ];
+      const base = baseParkings.find(p => String(p.id) === String(parkingId));
+      setParkingName(base ? base.name : (found ? found.name : "Parking"));
+      setSlots(DEMO_SLOTS);
+    }
+  }, [parkingId]);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
 
@@ -146,7 +175,7 @@ export default function ParkingSlots() {
       {selectedSlot && (
         <BookingSummaryModal
           slot={selectedSlot}
-          parkingName={PARKING_NAME}
+          parkingName={parkingName}
           onClose={() => setSelectedSlot(null)}
         />
       )}
