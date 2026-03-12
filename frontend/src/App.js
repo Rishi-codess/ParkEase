@@ -57,6 +57,11 @@ function App() {
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminDashboard />} />
+        <Route path="/admin/parkings" element={<AdminDashboard />} />
+        <Route path="/admin/bookings" element={<AdminDashboard />} />
+        <Route path="/admin/revenue" element={<AdminDashboard />} />
+        <Route path="/admin/ghost-slots" element={<AdminDashboard />} />
         <Route path="/admin/settings" element={<SettingsPage role="ADMIN" />} />
 
         {/* Placeholder Routes */}

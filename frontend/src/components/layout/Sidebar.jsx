@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   FaCar, FaHistory, FaUsers, FaChartBar,
-  FaCog, FaSignOutAlt, FaLock, FaWallet, FaPlus,
+  FaCog, FaSignOutAlt, FaLock, FaWallet, FaPlus, FaParking, FaMoneyBillWave,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
 const linkClass = ({ isActive }) =>
@@ -73,9 +74,30 @@ export default function Sidebar({ role }) {
 
         {role === "ADMIN" && (
           <>
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-1">Admin</p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-1">Overview</p>
             <NavLink className={linkClass} to="/admin/dashboard">
-              <FaUsers className="flex-shrink-0" /> Admin Panel
+              <FaChartBar className="flex-shrink-0" /> Dashboard
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">Manage</p>
+            <NavLink className={linkClass} to="/admin/users">
+              <FaUsers className="flex-shrink-0" /> Users
+            </NavLink>
+            <NavLink className={linkClass} to="/admin/parkings">
+              <FaParking className="flex-shrink-0" /> Parkings
+            </NavLink>
+            <NavLink className={linkClass} to="/admin/bookings">
+              <FaHistory className="flex-shrink-0" /> Bookings
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">Finance</p>
+            <NavLink className={linkClass} to="/admin/revenue">
+              <FaMoneyBillWave className="flex-shrink-0" /> Revenue
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">System</p>
+            <NavLink className={linkClass} to="/admin/ghost-slots">
+              <FaExclamationTriangle className="flex-shrink-0 text-neon-red" /> Ghost Slots
             </NavLink>
           </>
         )}
