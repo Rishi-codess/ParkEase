@@ -1,1145 +1,638 @@
-import { useMemo, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast, ToastContainer } from "react-toastify";
 import { useLocation } from "react-router-dom";
-import {
-  FaBell,
-  FaCar,
-  FaCarSide,
-  FaEye,
-  FaExclamationCircle,
-  FaMapMarkerAlt,
-  FaMotorcycle,
-  FaTimes,
-  FaTrash,
-  FaTruck,
-  FaUser,
-  FaUserShield,
-  FaUsers,
-} from "react-icons/fa";
-import { FiDownload } from "react-icons/fi";
 import DashboardLayout from "../../components/layout/DashboardLayout";
-import ParkingDetailsModal from "./ParkingDetailsModal";
+import {
+  FaUsers, FaParking, FaMoneyBillWave, FaCar,
+  FaCheckCircle, FaClock, FaTimesCircle, FaSpinner,
+  FaBuilding, FaShieldAlt, FaChartBar, FaExclamationTriangle,
+  FaBan, FaUserCheck, FaTrash, FaWrench, FaSearch,
+} from "react-icons/fa";
+import { api } from "../../api/api";
 
-const NAV_MAP = {
-  "ghost-slots": "ghostSlots",
-  dashboard: "dashboard",
-  users: "users",
-  parkings: "parkings",
-  bookings: "bookings",
-  revenue: "revenue",
-};
-
-const PARKING_STATUS_TABS = ["ALL", "PENDING", "APPROVED", "REJECTED", "SUSPENDED"];
-const BOOKING_TABS = ["ALL", "ACTIVE", "COMPLETED", "CANCELLED"];
-const TRANSACTION_TABS = ["ALL", "SUCCESS", "REFUNDED", "FAILED"];
-
-const USERS_SEED = [
-  {
-    id: 1,
-    name: "Rishi Kumar",
-    email: "rishi@email.com",
-    phone: "9876543210",
-    role: "USER",
-    joined: "Jan 12, 2026",
-    status: "ACTIVE",
-    blockReason: "",
-  },
-  {
-    id: 2,
-    name: "Amit Shah",
-    email: "amit@email.com",
-    phone: "9123456789",
-    role: "OWNER",
-    joined: "Dec 5, 2025",
-    status: "ACTIVE",
-    blockReason: "",
-  },
-  {
-    id: 3,
-    name: "Neha Singh",
-    email: "neha@email.com",
-    phone: "9988776655",
-    role: "USER",
-    joined: "Nov 20, 2025",
-    status: "BLOCKED",
-    blockReason: "No-show and abusive behavior reported.",
-  },
-  {
-    id: 4,
-    name: "Suresh Patel",
-    email: "suresh@email.com",
-    phone: "9112233445",
-    role: "USER",
-    joined: "Feb 1, 2026",
-    status: "ACTIVE",
-    blockReason: "",
-  },
-  {
-    id: 5,
-    name: "Priya Menon",
-    email: "priya@email.com",
-    phone: "9654321876",
-    role: "OWNER",
-    joined: "Oct 15, 2025",
-    status: "ACTIVE",
-    blockReason: "",
-  },
-  {
-    id: 6,
-    name: "Karan Dev",
-    email: "karan@email.com",
-    phone: "9009988776",
-    role: "USER",
-    joined: "Feb 10, 2026",
-    status: "ACTIVE",
-    blockReason: "",
-  },
-];
-
-const buildSlots = (prefix, types) => {
-  const slots = [];
-  const statuses = ["OCCUPIED", "AVAILABLE", "RESERVED", "MAINTENANCE"];
-  types.forEach(({ type, count, cost }) => {
-    for (let i = 1; i <= count; i++) {
-      slots.push({
-        slotId: `${prefix}-${type.charAt(0)}${String(i).padStart(2, "0")}`,
-        vehicleType: type,
-        status: statuses[Math.floor(Math.random() * 3.2) | 0], // weighted toward first 3
-        costPerHour: cost,
-      });
-    }
-  });
-  // Pin some slots to specific statuses for demo variety
-  if (slots.length > 2) slots[0].status = "OCCUPIED";
-  if (slots.length > 3) slots[slots.length - 1].status = "MAINTENANCE";
-  return slots;
-};
-
-const PARKINGS_SEED = [
-  {
-    id: 101,
-    name: "City Mall Parking",
-    location: "City Center, Block A",
-    owner: "Amit Shah",
-    ownerEmail: "amit@email.com",
-    submitted: "Jan 15, 2026",
-    status: "APPROVED",
-    pricePerHour: 50,
-    totalEarnings: 12400,
-    slots: buildSlots("CM", [
-      { type: "CAR", count: 6, cost: 50 },
-      { type: "BIKE", count: 4, cost: 20 },
-      { type: "LARGE", count: 2, cost: 100 },
-      { type: "SMALL", count: 2, cost: 30 },
-    ]),
-  },
-  {
-    id: 102,
-    name: "Hospital Parking",
-    location: "Medical District, Gate 2",
-    owner: "Priya Menon",
-    ownerEmail: "priya@email.com",
-    submitted: "Oct 20, 2025",
-    status: "APPROVED",
-    pricePerHour: 30,
-    totalEarnings: 8750,
-    slots: buildSlots("HP", [
-      { type: "CAR", count: 4, cost: 30 },
-      { type: "BIKE", count: 3, cost: 15 },
-      { type: "SMALL", count: 2, cost: 20 },
-    ]),
-  },
-  {
-    id: 103,
-    name: "Phoenix Mall Basement",
-    location: "Phoenix Complex, Basement",
-    owner: "Rahul Sharma",
-    ownerEmail: "rahul@email.com",
-    submitted: "Feb 20, 2026",
-    status: "PENDING",
-    pricePerHour: 80,
-    totalEarnings: 0,
-    slots: buildSlots("PX", [
-      { type: "CAR", count: 10, cost: 80 },
-      { type: "BIKE", count: 6, cost: 30 },
-      { type: "LARGE", count: 4, cost: 150 },
-    ]),
-  },
-  {
-    id: 104,
-    name: "Station Road Parking",
-    location: "Railway Station Sq.",
-    owner: "Deepa Nair",
-    ownerEmail: "deepa@email.com",
-    submitted: "Feb 22, 2026",
-    status: "PENDING",
-    pricePerHour: 40,
-    totalEarnings: 0,
-    slots: buildSlots("SR", [
-      { type: "CAR", count: 8, cost: 40 },
-      { type: "BIKE", count: 5, cost: 15 },
-      { type: "SMALL", count: 2, cost: 25 },
-    ]),
-  },
-  {
-    id: 105,
-    name: "Airport Overflow",
-    location: "Terminal 1",
-    owner: "Aman Verma",
-    ownerEmail: "aman@email.com",
-    submitted: "Feb 9, 2026",
-    status: "REJECTED",
-    pricePerHour: 90,
-    totalEarnings: 0,
-    slots: buildSlots("AP", [
-      { type: "CAR", count: 5, cost: 90 },
-      { type: "LARGE", count: 4, cost: 180 },
-      { type: "BIKE", count: 3, cost: 40 },
-    ]),
-  },
-];
-
-const BOOKINGS_SEED = [
-  {
-    id: "BK-001",
-    user: "Rishi Kumar",
-    parking: "City Mall Parking",
-    location: "City Center",
-    slot: "A-14",
-    date: "Feb 14, 2026",
-    duration: "3 hrs",
-    amount: "₹1500",
-    status: "COMPLETED",
-  },
-  {
-    id: "BK-002",
-    user: "Suresh Patel",
-    parking: "Hospital Parking",
-    location: "Medical District",
-    slot: "B-05",
-    date: "Feb 12, 2026",
-    duration: "1.5 hrs",
-    amount: "₹850",
-    status: "COMPLETED",
-  },
-  {
-    id: "BK-003",
-    user: "Karan Dev",
-    parking: "Airport Terminal 1",
-    location: "Airport Rd",
-    slot: "T1-45",
-    date: "Feb 10, 2026",
-    duration: "5 days",
-    amount: "₹12000",
-    status: "CANCELLED",
-  },
-  {
-    id: "BK-004",
-    user: "Rishi Kumar",
-    parking: "Railway Station",
-    location: "Station Square",
-    slot: "C-22",
-    date: "Feb 24, 2026",
-    duration: "Ongoing",
-    amount: "Running",
-    status: "ACTIVE",
-  },
-  {
-    id: "BK-005",
-    user: "Neha Singh",
-    parking: "City Mall Parking",
-    location: "City Center",
-    slot: "A-07",
-    date: "Feb 23, 2026",
-    duration: "2 hrs",
-    amount: "₹1000",
-    status: "COMPLETED",
-  },
-  {
-    id: "BK-006",
-    user: "Karan Dev",
-    parking: "Hospital Parking",
-    location: "Medical District",
-    slot: "B-11",
-    date: "Feb 24, 2026",
-    duration: "Ongoing",
-    amount: "Running",
-    status: "ACTIVE",
-  },
-];
-
-const WEEKLY_REVENUE = [18, 32, 15, 41, 27, 36, 22];
-
-const OWNER_PAYOUTS = [
-  { owner: "Amit Shah", parking: "City Mall Parking", gross: "₹4500", commission: "₹450", net: "₹4050" },
-  { owner: "Priya Menon", parking: "Hospital Parking", gross: "₹1450", commission: "₹145", net: "₹1305" },
-];
-
-const TRANSACTIONS_SEED = [
-  { id: "TXN001", user: "Rishi Kumar", parking: "City Mall Parking", amount: "₹1500", commission: "₹150", ownerGets: "₹1350", date: "Feb 14, 2026", status: "SUCCESS" },
-  { id: "TXN002", user: "Suresh Patel", parking: "Hospital Parking", amount: "₹850", commission: "₹85", ownerGets: "₹765", date: "Feb 12, 2026", status: "SUCCESS" },
-  { id: "TXN003", user: "Karan Dev", parking: "Airport Terminal 1", amount: "₹12000", commission: "₹1200", ownerGets: "₹10800", date: "Feb 10, 2026", status: "REFUNDED" },
-  { id: "TXN004", user: "Neha Singh", parking: "City Mall Parking", amount: "₹1000", commission: "₹100", ownerGets: "₹900", date: "Feb 23, 2026", status: "SUCCESS" },
-  { id: "TXN005", user: "Suresh Patel", parking: "City Mall Parking", amount: "₹2000", commission: "₹200", ownerGets: "₹1800", date: "Feb 21, 2026", status: "SUCCESS" },
-  { id: "TXN006", user: "Rishi Kumar", parking: "Hospital Parking", amount: "₹600", commission: "₹60", ownerGets: "₹540", date: "Feb 8, 2026", status: "FAILED" },
-];
-
-const GHOST_ACTIVE_SEED = [
-  {
-    id: "B-02",
-    parking: "Hospital Parking",
-    bookedBy: "Karan Dev",
-    bookedAt: "10:15 AM",
-    owner: "Priya Menon",
-    elapsed: 92,
-  },
-  {
-    id: "A-11",
-    parking: "City Mall Parking",
-    bookedBy: "Suresh Patel",
-    bookedAt: "1:00 PM",
-    owner: "Amit Shah",
-    elapsed: 18,
-  },
-];
-
-const GHOST_RELEASED_SEED = [
-  { slot: "A-04", parking: "City Mall Parking", bookedBy: "Rishi Kumar", originallyAt: "2:30 PM", releasedAt: "06:43 PM" },
-  { slot: "C-17", parking: "Railway Station", bookedBy: "Asha Roy", originallyAt: "11:25 AM", releasedAt: "01:01 PM" },
-];
-
-const COMPLAINTS_SEED = [
-  { id: "CMP-99", source: "User", issue: "Incorrect payout split", severity: "HIGH", status: "OPEN" },
-  { id: "CMP-100", source: "Owner", issue: "Parking listing delay", severity: "MEDIUM", status: "IN_REVIEW" },
-  { id: "CMP-101", source: "User", issue: "Ghost booking auto-release failed", severity: "HIGH", status: "RESOLVED" },
-];
-
-function cardBase(extra = "") {
-  return `bg-dark-card/60 backdrop-blur-xl border border-white/5 rounded-2xl ${extra}`;
-}
-
-function statusPill(value) {
-  const map = {
-    ACTIVE: "bg-neon-blue/20 text-neon-blue",
-    COMPLETED: "bg-neon-green/20 text-neon-green",
-    SUCCESS: "bg-neon-green/20 text-neon-green",
-    APPROVED: "bg-neon-green/20 text-neon-green",
-    BLOCKED: "bg-neon-red/20 text-neon-red",
-    REJECTED: "bg-neon-red/20 text-neon-red",
-    CANCELLED: "bg-neon-red/20 text-neon-red",
-    FAILED: "bg-neon-red/20 text-neon-red",
-    REFUNDED: "bg-yellow-500/20 text-yellow-300",
-    PENDING: "bg-yellow-500/20 text-yellow-300",
-    SUSPENDED: "bg-gray-500/20 text-gray-300",
-    OPEN: "bg-neon-red/20 text-neon-red",
-    IN_REVIEW: "bg-yellow-500/20 text-yellow-300",
-    RESOLVED: "bg-neon-green/20 text-neon-green",
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function StatTile({ label, value, icon, color }) {
+  const colors = {
+    blue:   "from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400",
+    green:  "from-neon-green/20 to-green-600/10 border-neon-green/30 text-neon-green",
+    purple: "from-neon-purple/20 to-purple-600/10 border-neon-purple/30 text-neon-purple",
+    red:    "from-neon-red/20 to-red-600/10 border-neon-red/30 text-neon-red",
+    yellow: "from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400",
+    gray:   "from-gray-500/20 to-gray-600/10 border-gray-500/30 text-gray-400",
   };
-
-  return `inline-flex items-center rounded-xl px-3 py-1 text-xs font-semibold tracking-wide ${map[value] || "bg-white/10 text-gray-300"}`;
+  return (
+    <motion.div whileHover={{ y: -3 }}
+      className={`bg-gradient-to-br ${colors[color] || colors.blue} border rounded-2xl p-5`}>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-gray-400 text-xs uppercase tracking-wider">{label}</p>
+        <span className="text-xl opacity-80">{icon}</span>
+      </div>
+      <p className="text-3xl font-black text-white">{value}</p>
+    </motion.div>
+  );
 }
 
-function AvatarBadge({ name }) {
+function StatusBadge({ status }) {
+  const map = {
+    ACTIVE:          "bg-neon-blue/20 text-neon-blue border-neon-blue/30 animate-pulse",
+    COMPLETED:       "bg-neon-green/20 text-neon-green border-neon-green/30",
+    CANCELLED:       "bg-neon-red/20 text-neon-red border-neon-red/30",
+    PENDING:         "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    SUSPENDED:       "bg-neon-red/20 text-neon-red border-neon-red/30",
+    PAYMENT_PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  };
   return (
-    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neon-blue/80 to-neon-purple/80 text-white text-sm font-bold flex items-center justify-center shrink-0">
-      {name.charAt(0)}
+    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${map[status] || map.PENDING}`}>
+      {status}
+    </span>
+  );
+}
+
+function SectionSpinner() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <FaSpinner className="text-neon-blue text-4xl animate-spin" />
     </div>
   );
 }
 
-function SectionTitle({ title, subtitle }) {
-  return (
-    <div className="mb-6">
-      <h1 className="text-5xl sm:text-4xl font-bold text-white leading-tight">{title}</h1>
-      <p className="text-gray-400 text-lg mt-2">{subtitle}</p>
-    </div>
-  );
-}
+const fmtTime   = (iso) => !iso ? "—" : new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const fmtMoney  = (n)   => `₹${(n || 0).toFixed(0)}`;
 
-function AdminDashboard() {
+// ── Main Component ────────────────────────────────────────────────────────────
+export default function AdminDashboard() {
   const location = useLocation();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [users, setUsers] = useState(USERS_SEED);
-  const [parkings, setParkings] = useState(PARKINGS_SEED);
-  const [transactions] = useState(TRANSACTIONS_SEED);
-  const [ghostActive, setGhostActive] = useState(GHOST_ACTIVE_SEED);
-  const [ghostReleased, setGhostReleased] = useState(GHOST_RELEASED_SEED);
+  // Derive active section from URL path
+  const getSection = (path) => {
+    if (path.includes("/users"))       return "users";
+    if (path.includes("/parkings"))    return "parkings";
+    if (path.includes("/bookings"))    return "bookings";
+    if (path.includes("/revenue"))     return "revenue";
+    if (path.includes("/ghost-slots")) return "ghost-slots";
+    return "overview";
+  };
 
-  const [parkingTab, setParkingTab] = useState("ALL");
-  const [bookingTab, setBookingTab] = useState("ALL");
-  const [txnTab, setTxnTab] = useState("ALL");
-  const [blockTarget, setBlockTarget] = useState(null);
-  const [blockReason, setBlockReason] = useState("");
+  const section = getSection(location.pathname);
 
-  // Parking space selector for live status
-  const approvedParkings = useMemo(() => parkings.filter((p) => p.status === "APPROVED"), [parkings]);
-  const [selectedParkingId, setSelectedParkingId] = useState(() => approvedParkings[0]?.id || null);
-  const [viewParkingId, setViewParkingId] = useState(null);
+  // Data states per section
+  const [stats,      setStats]      = useState(null);
+  const [users,      setUsers]      = useState([]);
+  const [parkings,   setParkings]   = useState([]);
+  const [bookings,   setBookings]   = useState([]);
+  const [revenue,    setRevenue]    = useState(null);
+  const [ghosts,     setGhosts]     = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState("");
 
-  const currentPage = useMemo(() => {
-    const segment = location.pathname.split("/").filter(Boolean).pop() || "dashboard";
-    return NAV_MAP[segment] || "dashboard";
-  }, [location.pathname]);
-
-  // Vehicle icon helper
-  const vIcon = (type) => {
-    switch (type) {
-      case "CAR": return <FaCar />;
-      case "BIKE": return <FaMotorcycle />;
-      case "LARGE": return <FaTruck />;
-      case "SMALL": return <FaCarSide />;
-      default: return <FaCar />;
+  // Load data based on active section
+  const load = useCallback(async () => {
+    setLoading(true);
+    setSearch("");
+    try {
+      if (section === "overview") {
+        const data = await api.get("/admin/stats");
+        setStats(data);
+      } else if (section === "users") {
+        const data = await api.get("/admin/users");
+        setUsers(data);
+      } else if (section === "parkings") {
+        const data = await api.get("/admin/parkings");
+        setParkings(data);
+      } else if (section === "bookings") {
+        const data = await api.get("/admin/bookings");
+        setBookings(data);
+      } else if (section === "revenue") {
+        const data = await api.get("/admin/revenue");
+        setRevenue(data);
+      } else if (section === "ghost-slots") {
+        const data = await api.get("/admin/ghost-slots");
+        setGhosts(data);
+      }
+    } catch (err) {
+      toast.error("Failed to load data: " + err.message);
+    } finally {
+      setLoading(false);
     }
+  }, [section]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const handleUserStatus = async (userId, status) => {
+    try {
+      await api.patch(`/admin/users/${userId}/status`, { status });
+      toast.success(`User ${status.toLowerCase()}`);
+      const data = await api.get("/admin/users");
+      setUsers(data);
+    } catch (err) { toast.error(err.message); }
   };
 
-  // Parking-aware slot data
-  const selectedParking = useMemo(
-    () => parkings.find((p) => p.id === selectedParkingId) || approvedParkings[0],
-    [parkings, selectedParkingId, approvedParkings]
-  );
-  const selectedSlots = selectedParking?.slots || [];
-  const slotStats = useMemo(() => {
-    const total = selectedSlots.length;
-    const occupied = selectedSlots.filter((s) => s.status === "OCCUPIED").length;
-    const available = selectedSlots.filter((s) => s.status === "AVAILABLE").length;
-    const reserved = selectedSlots.filter((s) => s.status === "RESERVED").length;
-    const maintenance = selectedSlots.filter((s) => s.status === "MAINTENANCE").length;
-    const occupancyRate = total > 0 ? Math.round((occupied / total) * 100) : 0;
-    return { total, occupied, available, reserved, maintenance, occupancyRate };
-  }, [selectedSlots]);
-  const slotVehicleTypes = useMemo(() => [...new Set(selectedSlots.map((s) => s.vehicleType))], [selectedSlots]);
-
-  // Occupancy donut gradient
-  const donutGradient = useMemo(() => {
-    const t = slotStats.total || 1;
-    let offset = 0;
-    const segs = [
-      { pct: (slotStats.occupied / t) * 100, color: "#ef4444" },
-      { pct: (slotStats.available / t) * 100, color: "#22c55e" },
-      { pct: (slotStats.reserved / t) * 100, color: "#eab308" },
-      { pct: (slotStats.maintenance / t) * 100, color: "#6b7280" },
-    ];
-    const parts = segs.map((s) => {
-      const str = `${s.color} ${offset}% ${offset + s.pct}%`;
-      offset += s.pct;
-      return str;
-    });
-    return `conic-gradient(${parts.join(", ")})`;
-  }, [slotStats]);
-
-  // Slot status color helper
-  const slotStatusColor = (status) => {
-    switch (status) {
-      case "OCCUPIED": return "bg-neon-red/15 border-neon-red/25 text-neon-red";
-      case "AVAILABLE": return "bg-neon-green/15 border-neon-green/25 text-neon-green";
-      case "RESERVED": return "bg-yellow-500/15 border-yellow-500/25 text-yellow-400";
-      case "MAINTENANCE": return "bg-gray-500/15 border-gray-500/25 text-gray-400";
-      default: return "bg-white/5 border-white/10 text-gray-400";
-    }
+  const handleDeleteParking = async (parkingId, name) => {
+    if (!window.confirm(`Delete "${name}" and all its slots? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/admin/parkings/${parkingId}`);
+      toast.success("Parking deleted.");
+      const data = await api.get("/admin/parkings");
+      setParkings(data);
+    } catch (err) { toast.error(err.message); }
   };
 
-  // Total platform revenue (₹)
-  const totalRevenue = useMemo(() => parkings.reduce((sum, p) => sum + (p.totalEarnings || 0), 0), [parkings]);
-
-  const filteredUsers = users.filter((user) => {
-    if (!searchTerm.trim()) return true;
-    const query = searchTerm.toLowerCase();
-    return [user.name, user.email, user.phone, user.role].join(" ").toLowerCase().includes(query);
-  });
-
-  const filteredParkings = parkings.filter((parking) => {
-    const matchesTab = parkingTab === "ALL" || parking.status === parkingTab;
-    const matchesSearch = !searchTerm.trim() || [parking.name, parking.location, parking.owner].join(" ").toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const filteredBookings = BOOKINGS_SEED.filter((booking) => {
-    const matchesTab = bookingTab === "ALL" || booking.status === bookingTab;
-    const matchesSearch = !searchTerm.trim() || [booking.user, booking.parking, booking.slot].join(" ").toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const filteredTransactions = transactions.filter((transaction) => {
-    const matchesTab = txnTab === "ALL" || transaction.status === txnTab;
-    const matchesSearch = !searchTerm.trim() || [transaction.id, transaction.user, transaction.parking].join(" ").toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesTab && matchesSearch;
-  });
-
-  const ownerAccounts = users.filter((user) => user.role === "OWNER");
-  const pendingParkingCount = parkings.filter((parking) => parking.status === "PENDING").length;
-
-  const updateParkingStatus = (id, status) => {
-    setParkings((prev) => prev.map((parking) => (parking.id === id ? { ...parking, status } : parking)));
+  const handleFixAllGhosts = async () => {
+    try {
+      const res = await api.post("/admin/ghost-slots/fix-all", {});
+      toast.success(`Fixed ${res.count} ghost slot(s).`);
+      const data = await api.get("/admin/ghost-slots");
+      setGhosts(data);
+    } catch (err) { toast.error(err.message); }
   };
 
-  const startBlocking = (user) => {
-    setBlockTarget(user);
-    setBlockReason("");
-  };
-
-  const confirmBlock = () => {
-    if (!blockTarget || !blockReason.trim()) return;
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === blockTarget.id
-          ? { ...user, status: "BLOCKED", blockReason: blockReason.trim() }
-          : user
-      )
+  // ── Search filter helpers ─────────────────────────────────────────────────
+  const filterList = (list, keys) =>
+    !search ? list : list.filter(item =>
+      keys.some(k => String(item[k] || "").toLowerCase().includes(search.toLowerCase()))
     );
-    setBlockTarget(null);
-    setBlockReason("");
-  };
-
-  const unblockUser = (id) => {
-    setUsers((prev) => prev.map((user) => (user.id === id ? { ...user, status: "ACTIVE", blockReason: "" } : user)));
-  };
-
-  const forceReleaseGhost = (slotId) => {
-    const target = ghostActive.find((ghost) => ghost.id === slotId);
-    if (!target) return;
-
-    setGhostActive((prev) => prev.filter((ghost) => ghost.id !== slotId));
-    setGhostReleased((prev) => [
-      {
-        slot: target.id,
-        parking: target.parking,
-        bookedBy: target.bookedBy,
-        originallyAt: target.bookedAt,
-        releasedAt: "Now",
-      },
-      ...prev,
-    ]);
-  };
-
-  const renderDashboard = () => (
-    <>
-      <SectionTitle title="Dashboard" subtitle="Real-time monitoring and analytics" />
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 mb-8">
-        <div className={`${cardBase("p-5")}`}>
-          <p className="text-gray-300 uppercase tracking-wide text-sm">Total Slots</p>
-          <h3 className="text-5xl font-bold mt-2">{slotStats.total}</h3>
-          <p className="text-gray-400 mt-1">{selectedParking?.name || "—"}</p>
-        </div>
-        <div className={`${cardBase("p-5 bg-gradient-to-r from-neon-red/15 to-transparent")}`}>
-          <p className="text-gray-300 uppercase tracking-wide text-sm">Occupied</p>
-          <h3 className="text-5xl font-bold mt-2 text-neon-red">{slotStats.occupied}</h3>
-          <p className="text-neon-red/70 mt-1">{slotStats.occupancyRate}% occupancy</p>
-        </div>
-        <div className={`${cardBase("p-5 bg-gradient-to-r from-neon-green/15 to-transparent")}`}>
-          <p className="text-gray-300 uppercase tracking-wide text-sm">Available</p>
-          <h3 className="text-5xl font-bold mt-2 text-neon-green">{slotStats.available}</h3>
-          <p className="text-neon-green/70 mt-1">open for booking</p>
-        </div>
-        <div className={`${cardBase("p-5 bg-gradient-to-r from-yellow-500/15 to-transparent")}`}>
-          <p className="text-gray-300 uppercase tracking-wide text-sm">Reserved</p>
-          <h3 className="text-5xl font-bold mt-2 text-yellow-400">{slotStats.reserved}</h3>
-          <p className="text-yellow-400/70 mt-1">pre-booked</p>
-        </div>
-        <div className={`${cardBase("p-5 bg-gradient-to-r from-neon-purple/15 to-transparent")}`}>
-          <p className="text-gray-300 uppercase tracking-wide text-sm">Revenue</p>
-          <h3 className="text-5xl font-bold mt-2">₹{totalRevenue.toLocaleString()}</h3>
-          <p className="text-neon-green mt-1">platform total</p>
-        </div>
-      </div>
-
-      {/* Live Parking Status + Occupancy */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-        <section className={`${cardBase("xl:col-span-2 p-6")}`}>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-            <h3 className="text-2xl font-bold text-white">Live Parking Status</h3>
-            <div className="flex items-center gap-3">
-              {/* Parking Space Selector */}
-              <select
-                value={selectedParkingId || ""}
-                onChange={(e) => setSelectedParkingId(Number(e.target.value))}
-                className="bg-dark-bg border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-neon-blue/40 min-w-[200px]"
-              >
-                {approvedParkings.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              {/* Real-time indicator */}
-              <div className="flex items-center gap-2 text-xs text-gray-400 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-                <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                Live
-              </div>
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-4">
-            <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-neon-red" />Occupied</span>
-            <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-neon-green" />Available</span>
-            <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />Reserved</span>
-            <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-gray-500" />Maintenance</span>
-          </div>
-
-          {/* Slot grid grouped by vehicle type */}
-          {slotVehicleTypes.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">No slots configured.</div>
-          ) : (
-            slotVehicleTypes.map((type) => {
-              const typeSlots = selectedSlots.filter((s) => s.vehicleType === type);
-              return (
-                <div key={type} className="mb-4">
-                  <h4 className="text-white/70 font-bold text-sm mb-2 flex items-center gap-2 uppercase tracking-wider">
-                    <span className="text-base">{vIcon(type)}</span>
-                    {type}
-                    <span className="text-xs text-gray-500 font-normal">({typeSlots.length})</span>
-                  </h4>
-                  <div className="grid grid-cols-5 sm:grid-cols-7 lg:grid-cols-10 gap-2 mb-2">
-                    {typeSlots.map((slot) => (
-                      <div
-                        key={slot.slotId}
-                        className={`h-14 rounded-lg border flex flex-col items-center justify-center transition-all ${slotStatusColor(slot.status)}`}
-                      >
-                        <span className="text-[10px] font-mono opacity-80">{slot.slotId}</span>
-                        <span className="text-sm mt-0.5">{vIcon(slot.vehicleType)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </section>
-
-        {/* Occupancy Donut */}
-        <section className={`${cardBase("p-6")}`}>
-          <h3 className="text-2xl font-bold mb-6">Occupancy</h3>
-          <div className="flex items-center justify-center py-4">
-            <div
-              className="w-52 h-52 rounded-full relative"
-              style={{ background: donutGradient }}
-            >
-              <div className="absolute inset-4 rounded-full bg-dark-bg border border-white/10 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black">{slotStats.occupancyRate}%</span>
-                <span className="text-gray-400 text-sm">occupied</span>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-gray-300">
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-neon-red" /> Occupied ({slotStats.occupied})</div>
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-neon-green" /> Available ({slotStats.available})</div>
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500" /> Reserved ({slotStats.reserved})</div>
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-gray-500" /> Maintenance ({slotStats.maintenance})</div>
-          </div>
-        </section>
-      </div>
-
-      {/* Bottom 3 panels */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <section className={`${cardBase("p-6")}`}>
-          <h3 className="text-xl font-bold mb-4">Owner Management</h3>
-          <div className="space-y-3">
-            {ownerAccounts.map((owner) => (
-              <div key={owner.id} className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <AvatarBadge name={owner.name} />
-                  <div>
-                    <p className="font-semibold text-white">{owner.name}</p>
-                    <p className="text-xs text-gray-400">{owner.email}</p>
-                  </div>
-                </div>
-                <span className={statusPill(owner.status)}>{owner.status}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className={`${cardBase("p-6")}`}>
-          <h3 className="text-xl font-bold mb-4">Complaint Management</h3>
-          <div className="space-y-3">
-            {COMPLAINTS_SEED.map((complaint) => (
-              <div key={complaint.id} className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-300">{complaint.id}</p>
-                  <span className={statusPill(complaint.status)}>{complaint.status}</span>
-                </div>
-                <p className="text-white font-semibold">{complaint.issue}</p>
-                <p className="text-xs text-gray-400 mt-1">{complaint.source} complaint - severity {complaint.severity}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className={`${cardBase("p-6")}`}>
-          <h3 className="text-xl font-bold mb-4">Parking Analytics Insights</h3>
-          <div className="space-y-3">
-            <div className="bg-neon-blue/10 border border-neon-blue/20 rounded-xl p-3">
-              <p className="text-white font-semibold">Peak Entry Window</p>
-              <p className="text-gray-300 text-sm">12:00 PM to 2:00 PM generates 31% of daily traffic.</p>
-            </div>
-            <div className="bg-neon-green/10 border border-neon-green/20 rounded-xl p-3">
-              <p className="text-white font-semibold">Best Performing Lot</p>
-              <p className="text-gray-300 text-sm">City Mall Parking conversion is up by 18% this week.</p>
-            </div>
-            <div className="bg-neon-red/10 border border-neon-red/20 rounded-xl p-3">
-              <p className="text-white font-semibold">Alert</p>
-              <p className="text-gray-300 text-sm">Ghost slot frequency increased by 2.1% in Hospital Parking.</p>
-            </div>
-          </div>
-        </section>
-      </div>
-    </>
-  );
-
-  const renderUsers = () => (
-    <>
-      <SectionTitle title="Users" subtitle="Manage all registered users and owners" />
-
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-        <div className="flex items-center gap-2 text-sm bg-white/5 border border-white/10 px-3 py-2 rounded-xl">
-          <FaUsers className="text-neon-blue" />
-          <span className="text-neon-blue font-semibold">{users.length}</span>
-          <span className="text-gray-300">total users</span>
-        </div>
-        <div className="flex gap-2">
-          <button className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">All Roles</button>
-          <button className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white">All Status</button>
-        </div>
-      </div>
-
-      <section className={`${cardBase("p-0 overflow-hidden")}`}>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1020px]">
-            <thead className="bg-white/5 text-gray-400 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="text-left p-4">User</th>
-                <th className="text-left p-4">Contact</th>
-                <th className="text-left p-4">Role</th>
-                <th className="text-left p-4">Joined</th>
-                <th className="text-left p-4">Status</th>
-                <th className="text-right p-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <AvatarBadge name={user.name} />
-                      <p className="font-semibold text-white">{user.name}</p>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <p className="text-white">{user.email}</p>
-                    <p className="text-xs text-gray-400">{user.phone}</p>
-                    {user.blockReason && <p className="text-xs text-neon-red mt-1">Reason: {user.blockReason}</p>}
-                  </td>
-                  <td className="p-4 text-gray-200 font-semibold flex items-center gap-2">
-                    {user.role === "OWNER" ? <FaUserShield className="text-neon-blue" /> : <FaUser className="text-gray-300" />} {user.role}
-                  </td>
-                  <td className="p-4 text-gray-300">{user.joined}</td>
-                  <td className="p-4"><span className={statusPill(user.status)}>{user.status}</span></td>
-                  <td className="p-4">
-                    <div className="flex justify-end gap-2">
-                      {user.status === "ACTIVE" ? (
-                        <button onClick={() => startBlocking(user)} className="px-3 py-1.5 rounded-xl bg-neon-red/20 text-neon-red hover:bg-neon-red/30 text-sm font-semibold">Block</button>
-                      ) : (
-                        <button onClick={() => unblockUser(user.id)} className="px-3 py-1.5 rounded-xl bg-neon-green/20 text-neon-green hover:bg-neon-green/30 text-sm font-semibold">Unblock</button>
-                      )}
-                      <button className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400"><FaTrash /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </>
-  );
-
-  const renderParkings = () => (
-    <>
-      <SectionTitle title="Parkings" subtitle="Review and approve owner-submitted parking lots" />
-
-      <div className="mb-5 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-3 text-yellow-300 font-semibold">
-        • {pendingParkingCount} parking lots awaiting your approval
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-5">
-        {PARKING_STATUS_TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setParkingTab(tab)}
-            className={`px-4 py-2 rounded-xl border text-sm font-semibold ${parkingTab === tab ? "bg-neon-blue/30 border-neon-blue/40 text-neon-blue" : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"}`}
-          >
-            {tab}
-            <span className="ml-2 text-xs text-gray-400">{tab === "ALL" ? parkings.length : parkings.filter((p) => p.status === tab).length}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {filteredParkings.map((parking) => (
-          <article key={parking.id} className={`${cardBase("p-5")}`}>
-            <div className="flex justify-between items-start gap-3">
-              <div>
-                <h3 className="text-3xl font-bold">{parking.name}</h3>
-                <p className="text-gray-400 mt-1 flex items-center gap-2"><FaMapMarkerAlt className="text-neon-blue" />{parking.location}</p>
-              </div>
-              <span className={statusPill(parking.status)}>{parking.status}</span>
-            </div>
-
-            <div className="grid grid-cols-4 gap-3 mt-4 text-center">
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <p className="text-neon-purple text-3xl font-bold">{(parking.slots || []).length}</p>
-                <p className="text-xs text-gray-400">Slots</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <p className="text-neon-green text-3xl font-bold">₹{parking.pricePerHour}</p>
-                <p className="text-xs text-gray-400">Per Hour</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <p className="text-neon-blue text-2xl font-bold">{parking.owner}</p>
-                <p className="text-xs text-gray-400">Owner</p>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-                <p className="text-yellow-400 text-3xl font-bold">₹{(parking.totalEarnings || 0).toLocaleString()}</p>
-                <p className="text-xs text-gray-400">Earnings</p>
-              </div>
-            </div>
-
-            <p className="text-sm text-gray-500 mt-3">Submitted: {parking.submitted}</p>
-
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              <button onClick={() => setViewParkingId(parking.id)} className="py-2 rounded-xl bg-white/5 border border-white/10 text-gray-200 font-semibold flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
-                <FaEye /> View
-              </button>
-              {parking.status === "PENDING" ? (
-                <>
-                  <button onClick={() => updateParkingStatus(parking.id, "APPROVED")} className="py-2 rounded-xl bg-neon-green/20 text-neon-green font-semibold">Approve</button>
-                  <button onClick={() => updateParkingStatus(parking.id, "REJECTED")} className="py-2 rounded-xl bg-neon-red/20 text-neon-red font-semibold">Reject</button>
-                </>
-              ) : (
-                <button onClick={() => updateParkingStatus(parking.id, "SUSPENDED")} className="col-span-2 py-2 rounded-xl bg-white/10 text-gray-200 font-semibold">Suspend</button>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </>
-  );
-
-  const renderBookings = () => {
-    const active = BOOKINGS_SEED.filter((booking) => booking.status === "ACTIVE").length;
-    const completed = BOOKINGS_SEED.filter((booking) => booking.status === "COMPLETED").length;
-    const cancelled = BOOKINGS_SEED.filter((booking) => booking.status === "CANCELLED").length;
-
-    return (
-      <>
-        <SectionTitle title="All Bookings" subtitle="Platform-wide booking overview" />
-
-        <div className="flex flex-wrap justify-end gap-3 mb-4">
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center min-w-20"><p className="text-neon-blue text-4xl font-bold">{active}</p><p className="text-xs text-gray-400">Active</p></div>
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center min-w-20"><p className="text-neon-green text-4xl font-bold">{completed}</p><p className="text-xs text-gray-400">Completed</p></div>
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-center min-w-20"><p className="text-neon-red text-4xl font-bold">{cancelled}</p><p className="text-xs text-gray-400">Cancelled</p></div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {BOOKING_TABS.map((tab) => (
-            <button key={tab} onClick={() => setBookingTab(tab)} className={`px-4 py-2 rounded-xl border text-sm font-semibold ${bookingTab === tab ? "bg-neon-blue/30 border-neon-blue/40 text-neon-blue" : "bg-white/5 border-white/10 text-gray-300"}`}>
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        <section className={`${cardBase("p-0 overflow-hidden")}`}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1060px]">
-              <thead className="bg-white/5 text-gray-400 text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="p-4 text-left">User</th>
-                  <th className="p-4 text-left">Parking Location</th>
-                  <th className="p-4 text-left">Slot</th>
-                  <th className="p-4 text-left">Date & Duration</th>
-                  <th className="p-4 text-left">Amount</th>
-                  <th className="p-4 text-left">Status</th>
-                  <th className="p-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBookings.map((booking) => (
-                  <tr key={booking.id} className="border-t border-white/5 hover:bg-white/[0.03]">
-                    <td className="p-4 text-white font-semibold">{booking.user}</td>
-                    <td className="p-4">
-                      <p className="text-white">{booking.parking}</p>
-                      <p className="text-xs text-gray-400">{booking.location}</p>
-                    </td>
-                    <td className="p-4"><span className="bg-neon-purple/20 text-neon-purple px-2 py-1 rounded-lg text-sm font-semibold">{booking.slot}</span></td>
-                    <td className="p-4">
-                      <p className="text-white">{booking.date}</p>
-                      <p className="text-xs text-gray-400">{booking.duration}</p>
-                    </td>
-                    <td className="p-4 text-white font-semibold">{booking.amount}</td>
-                    <td className="p-4"><span className={statusPill(booking.status)}>{booking.status}</span></td>
-                    <td className="p-4 text-right">
-                      {booking.status === "ACTIVE" ? (
-                        <button className="px-3 py-1.5 rounded-xl bg-neon-red/20 text-neon-red text-sm font-semibold">Force Cancel</button>
-                      ) : (
-                        <span className="text-gray-500">-</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </>
-    );
-  };
-
-  const renderRevenue = () => (
-    <>
-      <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
-        <SectionTitle title="Revenue & Payments" subtitle="Platform earnings, commissions and transactions" />
-        <button className="inline-flex items-center gap-2 rounded-xl bg-neon-blue/20 border border-neon-blue/30 px-4 py-2 text-neon-blue font-semibold"><FiDownload /> Export CSV</button>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
-        <div className={`${cardBase("p-5 bg-gradient-to-r from-neon-green/15 to-transparent")}`}>
-          <p className="text-gray-300 uppercase text-sm">Total Revenue</p>
-          <h3 className="text-5xl font-bold mt-2">₹{totalRevenue.toLocaleString()}</h3>
-          <p className="text-neon-green mt-1">+24% vs last week</p>
-        </div>
-        <div className={`${cardBase("p-5 bg-gradient-to-r from-neon-purple/15 to-transparent")}`}>
-          <p className="text-gray-300 uppercase text-sm">Platform Commission (10%)</p>
-          <h3 className="text-5xl font-bold mt-2">₹{Math.round(totalRevenue * 0.1).toLocaleString()}</h3>
-          <p className="text-neon-green mt-1">+18% vs last week</p>
-        </div>
-        <div className={`${cardBase("p-5 bg-gradient-to-r from-neon-red/15 to-transparent")}`}>
-          <p className="text-gray-300 uppercase text-sm">Total Refunds</p>
-          <h3 className="text-5xl font-bold mt-2">₹12,000</h3>
-        </div>
-      </div>
-
-      <section className={`${cardBase("p-6 mb-6")}`}>
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="text-2xl font-bold">Revenue Trends</h3>
-            <p className="text-gray-400">Daily earnings for this week</p>
-          </div>
-          <button className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300">This Week</button>
-        </div>
-        <div className="h-52 flex items-end gap-8 px-4 border-t border-white/5 pt-6">
-          {WEEKLY_REVENUE.map((value, index) => (
-            <div key={index} className="flex-1 flex flex-col items-center justify-end gap-2">
-              <div className="w-6 rounded-t-lg bg-gradient-to-b from-neon-blue to-neon-purple" style={{ height: `${value * 3}px` }} />
-              <span className="text-xs text-gray-400">{["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"][index]}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className={`${cardBase("p-0 overflow-hidden mb-6")}`}>
-        <div className="p-5 border-b border-white/5"><h3 className="text-3xl font-bold">Owner Payout Breakdown</h3></div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px]">
-            <thead className="bg-white/5 text-gray-400 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="p-4 text-left">Owner</th>
-                <th className="p-4 text-left">Parking</th>
-                <th className="p-4 text-left">Gross Revenue</th>
-                <th className="p-4 text-left">Commission (10%)</th>
-                <th className="p-4 text-right">Net Payout</th>
-              </tr>
-            </thead>
-            <tbody>
-              {OWNER_PAYOUTS.map((row) => (
-                <tr key={row.owner} className="border-t border-white/5">
-                  <td className="p-4 text-white font-semibold">{row.owner}</td>
-                  <td className="p-4 text-gray-300">{row.parking}</td>
-                  <td className="p-4 text-white font-semibold">{row.gross}</td>
-                  <td className="p-4 text-neon-red font-semibold">{row.commission}</td>
-                  <td className="p-4 text-right text-neon-green font-semibold">{row.net}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className={`${cardBase("p-0 overflow-hidden")}`}>
-        <div className="p-5 border-b border-white/5 flex flex-wrap justify-between items-center gap-3">
-          <h3 className="text-3xl font-bold">All Transactions</h3>
-          <div className="flex flex-wrap gap-2">
-            {TRANSACTION_TABS.map((tab) => (
-              <button key={tab} onClick={() => setTxnTab(tab)} className={`px-3 py-1.5 rounded-xl border text-sm font-semibold ${txnTab === tab ? "bg-neon-blue/30 border-neon-blue/40 text-neon-blue" : "bg-white/5 border-white/10 text-gray-300"}`}>{tab}</button>
-            ))}
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1160px]">
-            <thead className="bg-white/5 text-gray-400 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="p-4 text-left">TXN ID</th>
-                <th className="p-4 text-left">User</th>
-                <th className="p-4 text-left">Parking</th>
-                <th className="p-4 text-left">Amount</th>
-                <th className="p-4 text-left">Commission</th>
-                <th className="p-4 text-left">Owner Gets</th>
-                <th className="p-4 text-left">Date</th>
-                <th className="p-4 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTransactions.map((transaction) => (
-                <tr key={transaction.id} className="border-t border-white/5">
-                  <td className="p-4 text-gray-300">{transaction.id}</td>
-                  <td className="p-4 text-white">{transaction.user}</td>
-                  <td className="p-4 text-gray-300">{transaction.parking}</td>
-                  <td className="p-4 text-white font-semibold">{transaction.amount}</td>
-                  <td className="p-4 text-neon-red">{transaction.commission}</td>
-                  <td className="p-4 text-neon-green">{transaction.ownerGets}</td>
-                  <td className="p-4 text-gray-300">{transaction.date}</td>
-                  <td className="p-4 text-right"><span className={statusPill(transaction.status)}>{transaction.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </>
-  );
-
-  const renderGhostSlots = () => (
-    <>
-      <SectionTitle title="Ghost Slots" subtitle="Slots booked but with no check-in past the threshold" />
-
-      <div className="flex flex-wrap justify-between gap-3 mb-4">
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neon-red flex items-center gap-2"><FaBell /> {ghostActive.length} Active Ghosts</div>
-        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neon-green">{ghostReleased.length} Released</div>
-      </div>
-
-      <div className="mb-5 rounded-2xl border border-neon-blue/20 bg-neon-blue/10 px-4 py-3 text-gray-200">
-        <FaExclamationCircle className="inline-block mr-2 text-neon-blue" />
-        Ghost slots are bookings where the user has not checked in for <strong>30+ minutes</strong> after their start time. Force-release frees the slot for other users immediately.
-      </div>
-
-      <h3 className="text-3xl font-bold mb-4 flex items-center gap-2"><span className="w-2 h-8 bg-neon-red rounded-full" />Active Ghost Signals</h3>
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
-        {ghostActive.map((ghost) => (
-          <article key={ghost.id} className={`${cardBase("p-5")}`}>
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-gray-400 uppercase text-sm">Ghost Signal</p>
-                <h3 className="text-5xl font-black">#{ghost.id}</h3>
-              </div>
-              <span className={statusPill("OPEN")}>GHOST</span>
-            </div>
-            <dl className="grid grid-cols-2 gap-y-2 mt-4 text-sm">
-              <dt className="text-gray-400">Parking</dt><dd className="text-white text-right">{ghost.parking}</dd>
-              <dt className="text-gray-400">Booked By</dt><dd className="text-neon-blue text-right">{ghost.bookedBy}</dd>
-              <dt className="text-gray-400">Booked At</dt><dd className="text-white text-right">{ghost.bookedAt}</dd>
-              <dt className="text-gray-400">Owner</dt><dd className="text-gray-200 text-right">{ghost.owner}</dd>
-            </dl>
-            <div className="mt-4">
-              <div className="flex justify-between text-sm mb-1"><span className="text-gray-400">Time Elapsed</span><span className="text-yellow-300">{ghost.elapsed} min</span></div>
-              <div className="h-2 rounded-full bg-dark-bg border border-white/10 overflow-hidden">
-                <div className={`${ghost.elapsed > 30 ? "bg-neon-red" : "bg-yellow-400"} h-full`} style={{ width: `${Math.min(100, (ghost.elapsed / 100) * 100)}%` }} />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Threshold: 30 min</p>
-            </div>
-            <button onClick={() => forceReleaseGhost(ghost.id)} className="mt-5 w-full rounded-xl bg-neon-red/20 text-neon-red py-2.5 font-semibold">Force Release Slot</button>
-          </article>
-        ))}
-      </div>
-
-      <section className={`${cardBase("p-0 overflow-hidden")}`}>
-        <div className="p-5 border-b border-white/5"><h3 className="text-3xl font-bold flex items-center gap-2"><span className="w-2 h-8 bg-neon-green rounded-full" />Recently Released</h3></div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px]">
-            <thead className="bg-white/5 text-gray-400 text-xs uppercase tracking-wide">
-              <tr>
-                <th className="p-4 text-left">Slot</th>
-                <th className="p-4 text-left">Parking</th>
-                <th className="p-4 text-left">Booked By</th>
-                <th className="p-4 text-left">Originally At</th>
-                <th className="p-4 text-right">Released At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ghostReleased.map((row, idx) => (
-                <tr key={`${row.slot}-${idx}`} className="border-t border-white/5">
-                  <td className="p-4 text-neon-green font-bold">#{row.slot}</td>
-                  <td className="p-4 text-white">{row.parking}</td>
-                  <td className="p-4 text-gray-300">{row.bookedBy}</td>
-                  <td className="p-4 text-gray-300">{row.originallyAt}</td>
-                  <td className="p-4 text-right"><span className="px-3 py-1.5 rounded-xl bg-neon-green/20 text-neon-green font-semibold">{row.releasedAt}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </>
-  );
-
-  const pageContent = {
-    dashboard: renderDashboard(),
-    users: renderUsers(),
-    parkings: renderParkings(),
-    bookings: renderBookings(),
-    revenue: renderRevenue(),
-    ghostSlots: renderGhostSlots(),
-  };
 
   return (
-    <DashboardLayout
-      role="ADMIN"
-      onSearch={setSearchTerm}
-      searchTerm={searchTerm}
-      userInfo={{ name: "Administrator", role: "ADMIN" }}
-    >
-      <div className="space-y-1">{pageContent[currentPage]}</div>
+    <>
+      <ToastContainer theme="dark" position="top-right" autoClose={3000}
+        style={{ zIndex: 9999, top: "5rem", right: "1rem" }} />
 
-      {blockTarget && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${cardBase("w-full max-w-md p-6")}`}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-2xl font-bold">Block {blockTarget.name}</h3>
-              <button onClick={() => setBlockTarget(null)} className="text-gray-400 hover:text-white"><FaTimes /></button>
-            </div>
-            <p className="text-gray-400 text-sm mb-3">Please provide a reason to log this moderation action.</p>
-            <textarea
-              value={blockReason}
-              onChange={(event) => setBlockReason(event.target.value)}
-              placeholder="Enter blocking reason..."
-              className="w-full h-28 rounded-xl bg-dark-bg border border-white/10 p-3 text-white placeholder-gray-500 outline-none focus:border-neon-blue/40"
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button onClick={() => setBlockTarget(null)} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300">Cancel</button>
-              <button
-                onClick={confirmBlock}
-                disabled={!blockReason.trim()}
-                className="px-4 py-2 rounded-xl bg-neon-red/25 text-neon-red disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Confirm Block
-              </button>
+      <DashboardLayout role="ADMIN">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-white mb-1 capitalize">
+              {section === "ghost-slots" ? "Ghost Slots" : section === "overview" ? "Admin Dashboard" : section}
+            </h2>
+            <p className="text-gray-400 text-sm">Platform-wide overview — ParkEase</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Search bar for list pages */}
+            {["users","parkings","bookings"].includes(section) && (
+              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-2">
+                <FaSearch className="text-gray-400 text-sm" />
+                <input
+                  type="text"
+                  placeholder={`Search ${section}...`}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="bg-transparent text-white text-sm placeholder-gray-500 outline-none w-48"
+                />
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-4 py-2 bg-neon-purple/10 border border-neon-purple/30 rounded-xl">
+              <FaShieldAlt className="text-neon-purple" />
+              <span className="text-neon-purple font-bold text-sm">ADMIN</span>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Parking Details Modal */}
-      {viewParkingId && (
-        <ParkingDetailsModal
-          parking={parkings.find((p) => p.id === viewParkingId)}
-          complaints={COMPLAINTS_SEED}
-          onClose={() => setViewParkingId(null)}
-          onStatusChange={(id, status) => {
-            updateParkingStatus(id, status);
-            setViewParkingId(null);
-          }}
-        />
-      )}
-    </DashboardLayout>
+        {loading ? <SectionSpinner /> : (
+          <AnimatePresence mode="wait">
+            <motion.div key={section}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+
+              {/* ── OVERVIEW ─────────────────────────────────────────────── */}
+              {section === "overview" && stats && (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <StatTile label="Total Users"     value={stats.totalUsers}     icon={<FaUsers />}         color="blue" />
+                    <StatTile label="Total Owners"    value={stats.totalOwners}    icon={<FaBuilding />}      color="purple" />
+                    <StatTile label="Total Parkings"  value={stats.totalParkings}  icon={<FaParking />}       color="green" />
+                    <StatTile label="Total Slots"     value={stats.totalSlots}     icon={<FaCar />}           color="gray" />
+                    <StatTile label="Active Bookings" value={stats.activeBookings} icon={<FaClock />}         color="yellow" />
+                    <StatTile label="Total Bookings"  value={stats.totalBookings}  icon={<FaChartBar />}      color="blue" />
+                    <StatTile label="Platform Revenue" value={fmtMoney(stats.totalRevenue)} icon={<FaMoneyBillWave />} color="green" />
+                    <StatTile label="Occupied Slots"  value={stats.occupiedSlots}  icon={<FaTimesCircle />}   color="red" />
+                  </div>
+
+                  {/* Slot Health */}
+                  <div className="bg-dark-card/60 border border-white/5 rounded-2xl p-6 mb-8">
+                    <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                      <FaCar className="text-neon-blue" /> Slot Health
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                      {[
+                        { label: "Available",   value: stats.availableSlots,   color: "text-neon-green",  bar: "bg-neon-green" },
+                        { label: "Occupied",    value: stats.occupiedSlots,    color: "text-neon-red",    bar: "bg-neon-red" },
+                        { label: "Reserved",    value: stats.reservedSlots,    color: "text-yellow-400",  bar: "bg-yellow-400" },
+                        { label: "Maintenance", value: stats.maintenanceSlots, color: "text-gray-400",    bar: "bg-gray-500" },
+                        { label: "Disabled",    value: stats.disabledSlots,    color: "text-gray-600",    bar: "bg-gray-700" },
+                      ].map(({ label, value, color, bar }) => {
+                        const pct = stats.totalSlots > 0 ? ((value / stats.totalSlots) * 100).toFixed(1) : 0;
+                        return (
+                          <div key={label} className="bg-white/5 rounded-xl p-4 border border-white/5">
+                            <p className={`text-2xl font-black ${color}`}>{value}</p>
+                            <p className="text-gray-500 text-xs uppercase mt-1">{label}</p>
+                            <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${bar}`} style={{ width: `${pct}%` }} />
+                            </div>
+                            <p className="text-gray-600 text-[10px] mt-1">{pct}%</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Summary + Slot breakdown */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-dark-card/60 border border-white/5 rounded-2xl p-6">
+                      <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                        <FaChartBar className="text-neon-blue" /> Platform Summary
+                      </h3>
+                      <div className="space-y-3">
+                        {[
+                          { label: "Registered Users",  value: stats.totalUsers },
+                          { label: "Parking Owners",    value: stats.totalOwners },
+                          { label: "Parking Lots",      value: stats.totalParkings },
+                          { label: "Total Slots",       value: stats.totalSlots },
+                          { label: "Bookings All Time", value: stats.totalBookings },
+                          { label: "Active Right Now",  value: stats.activeBookings },
+                          { label: "Platform Revenue",  value: fmtMoney(stats.totalRevenue) },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                            <span className="text-gray-400 text-sm">{label}</span>
+                            <span className="text-white font-bold">{value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-dark-card/60 border border-white/5 rounded-2xl p-6">
+                      <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                        <FaCar className="text-neon-green" /> Recent Bookings
+                      </h3>
+                      <div className="space-y-2">
+                        {(stats.recentBookings || []).slice(0, 5).map(b => (
+                          <div key={b.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                            <div>
+                              <p className="text-white text-sm font-medium">{b.userName}</p>
+                              <p className="text-gray-500 text-xs">{b.parkingName} · {b.slotCode}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-neon-green font-bold text-sm">{b.amount != null ? `₹${b.amount}` : "—"}</p>
+                              <StatusBadge status={b.status} />
+                            </div>
+                          </div>
+                        ))}
+                        {!(stats.recentBookings?.length) && <p className="text-gray-500 text-sm">No bookings yet.</p>}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── USERS ────────────────────────────────────────────────── */}
+              {section === "users" && (
+                <div className="bg-dark-card/60 border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="p-5 border-b border-white/5 flex justify-between items-center">
+                    <h3 className="text-white font-bold">All Users ({users.length})</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider">
+                          <th className="py-3 px-5">Name</th>
+                          <th className="py-3 px-5">Email / Phone</th>
+                          <th className="py-3 px-5">Role</th>
+                          <th className="py-3 px-5">Bookings</th>
+                          <th className="py-3 px-5">Outstanding</th>
+                          <th className="py-3 px-5">Status</th>
+                          <th className="py-3 px-5">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {filterList(users, ["name","email","role"]).map(u => (
+                          <motion.tr key={u.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                            className="hover:bg-white/5 transition-colors text-sm">
+                            <td className="py-3 px-5">
+                              <p className="text-white font-medium">{u.name}</p>
+                              <p className="text-gray-500 text-xs">ID: {u.id}</p>
+                            </td>
+                            <td className="py-3 px-5">
+                              <p className="text-gray-300">{u.email}</p>
+                              <p className="text-gray-500 text-xs">{u.phone || "—"}</p>
+                            </td>
+                            <td className="py-3 px-5">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                                u.role === "ADMIN" ? "bg-neon-purple/20 text-neon-purple border-neon-purple/30" :
+                                u.role === "OWNER" ? "bg-neon-blue/20 text-neon-blue border-neon-blue/30" :
+                                "bg-gray-500/20 text-gray-400 border-gray-500/30"
+                              }`}>{u.role}</span>
+                            </td>
+                            <td className="py-3 px-5 text-gray-300">{u.totalBookings}</td>
+                            <td className="py-3 px-5">
+                              {u.outstanding > 0
+                                ? <span className="text-neon-red font-bold">₹{u.outstanding}</span>
+                                : <span className="text-gray-500">—</span>}
+                            </td>
+                            <td className="py-3 px-5"><StatusBadge status={u.accountStatus} /></td>
+                            <td className="py-3 px-5">
+                              <div className="flex gap-2">
+                                {u.accountStatus !== "ACTIVE" && (
+                                  <button onClick={() => handleUserStatus(u.id, "ACTIVE")}
+                                    className="p-1.5 rounded-lg bg-neon-green/10 text-neon-green hover:bg-neon-green/20 border border-neon-green/20 transition-all"
+                                    title="Activate">
+                                    <FaUserCheck size={12} />
+                                  </button>
+                                )}
+                                {u.accountStatus === "ACTIVE" && u.role !== "ADMIN" && (
+                                  <button onClick={() => handleUserStatus(u.id, "SUSPENDED")}
+                                    className="p-1.5 rounded-lg bg-neon-red/10 text-neon-red hover:bg-neon-red/20 border border-neon-red/20 transition-all"
+                                    title="Suspend">
+                                    <FaBan size={12} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                        {filterList(users, ["name","email","role"]).length === 0 && (
+                          <tr><td colSpan={7} className="py-10 text-center text-gray-500">No users found.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ── PARKINGS ─────────────────────────────────────────────── */}
+              {section === "parkings" && (
+                <div className="space-y-4">
+                  <p className="text-gray-400 text-sm">{parkings.length} parking lots registered</p>
+                  {filterList(parkings, ["name","location","ownerName"]).map((p, i) => (
+                    <motion.div key={p.id}
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="bg-dark-card/60 border border-white/5 rounded-2xl p-5">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-neon-blue/10 border border-neon-blue/20 flex items-center justify-center text-neon-blue">
+                            <FaBuilding />
+                          </div>
+                          <div>
+                            <p className="text-white font-bold">{p.name}</p>
+                            <p className="text-gray-500 text-xs">{p.location}</p>
+                            <p className="text-gray-600 text-xs mt-0.5">Owner: {p.ownerName} · {p.ownerEmail}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-6 text-sm">
+                          <div className="text-center">
+                            <p className="text-white font-bold">{p.totalSlots}</p>
+                            <p className="text-gray-500 text-xs">Slots</p>
+                          </div>
+                          <div className="text-center">
+                            <p className={`font-bold ${p.occupancyRate > 75 ? "text-neon-red" : "text-neon-blue"}`}>
+                              {p.occupancyRate}%
+                            </p>
+                            <p className="text-gray-500 text-xs">Occupancy</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-neon-blue font-bold">{p.bookingCount}</p>
+                            <p className="text-gray-500 text-xs">Bookings</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-neon-green font-bold">{fmtMoney(p.revenue)}</p>
+                            <p className="text-gray-500 text-xs">Revenue</p>
+                          </div>
+                          <button onClick={() => handleDeleteParking(p.id, p.name)}
+                            className="p-2 rounded-lg bg-neon-red/10 text-neon-red hover:bg-neon-red/20 border border-neon-red/20 transition-all"
+                            title="Delete Parking">
+                            <FaTrash size={12} />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Occupancy bar */}
+                      <div className="mt-4 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${p.occupancyRate > 75 ? "bg-neon-red" : "bg-neon-blue"}`}
+                          style={{ width: `${p.occupancyRate}%` }} />
+                      </div>
+                    </motion.div>
+                  ))}
+                  {filterList(parkings, ["name","location","ownerName"]).length === 0 && (
+                    <div className="text-center py-20 text-gray-500">No parkings found.</div>
+                  )}
+                </div>
+              )}
+
+              {/* ── BOOKINGS ─────────────────────────────────────────────── */}
+              {section === "bookings" && (
+                <div className="bg-dark-card/60 border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="p-5 border-b border-white/5">
+                    <h3 className="text-white font-bold">All Bookings ({bookings.length})</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider">
+                          <th className="py-3 px-5">ID</th>
+                          <th className="py-3 px-5">User</th>
+                          <th className="py-3 px-5">Parking · Slot</th>
+                          <th className="py-3 px-5">Vehicle</th>
+                          <th className="py-3 px-5">Start → End</th>
+                          <th className="py-3 px-5">Amount</th>
+                          <th className="py-3 px-5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {filterList(bookings, ["userName","parkingName","slotCode","vehicleNumber"]).map(b => (
+                          <motion.tr key={b.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                            className="hover:bg-white/5 transition-colors text-sm">
+                            <td className="py-3 px-5 font-mono text-gray-500">#{b.id}</td>
+                            <td className="py-3 px-5">
+                              <p className="text-white font-medium">{b.userName}</p>
+                              <p className="text-gray-500 text-xs">{b.userEmail}</p>
+                            </td>
+                            <td className="py-3 px-5">
+                              <p className="text-white">{b.parkingName}</p>
+                              <p className="text-gray-500 text-xs font-mono">{b.slotCode} · {b.vehicleType}</p>
+                            </td>
+                            <td className="py-3 px-5 font-mono text-gray-300">{b.vehicleNumber}</td>
+                            <td className="py-3 px-5 text-gray-400 text-xs">
+                              <p>{fmtTime(b.startTime)}</p>
+                              <p>{fmtTime(b.endTime)}</p>
+                            </td>
+                            <td className="py-3 px-5 font-bold text-neon-green">
+                              {b.amount != null ? `₹${b.amount}` : "—"}
+                            </td>
+                            <td className="py-3 px-5"><StatusBadge status={b.status} /></td>
+                          </motion.tr>
+                        ))}
+                        {filterList(bookings, ["userName","parkingName","slotCode","vehicleNumber"]).length === 0 && (
+                          <tr><td colSpan={7} className="py-10 text-center text-gray-500">No bookings found.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* ── REVENUE ──────────────────────────────────────────────── */}
+              {section === "revenue" && revenue && (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <StatTile label="Total Revenue"      value={fmtMoney(revenue.totalRevenue)}     icon={<FaMoneyBillWave />} color="green" />
+                    <StatTile label="Total Transactions" value={revenue.totalTransactions}           icon={<FaCheckCircle />}   color="blue" />
+                    <StatTile label="Parking Lots"       value={revenue.revenueByParking?.length || 0} icon={<FaBuilding />}   color="purple" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    {/* Revenue by parking */}
+                    <div className="bg-dark-card/60 border border-white/5 rounded-2xl p-6">
+                      <h3 className="text-white font-bold mb-4">Revenue by Parking</h3>
+                      <div className="space-y-3">
+                        {(revenue.revenueByParking || []).map(r => (
+                          <div key={r.parking}>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-300">{r.parking}</span>
+                              <span className="text-neon-green font-bold">{fmtMoney(r.revenue)} <span className="text-gray-500 font-normal text-xs">({r.percentage}%)</span></span>
+                            </div>
+                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-neon-green" style={{ width: `${r.percentage}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                        {!(revenue.revenueByParking?.length) && <p className="text-gray-500 text-sm">No data yet.</p>}
+                      </div>
+                    </div>
+
+                    {/* Revenue by vehicle type */}
+                    <div className="bg-dark-card/60 border border-white/5 rounded-2xl p-6">
+                      <h3 className="text-white font-bold mb-4">Revenue by Vehicle Type</h3>
+                      <div className="space-y-3">
+                        {(revenue.revenueByVehicle || []).map(r => {
+                          const colors = { CAR: "bg-neon-blue", BIKE: "bg-neon-purple", LARGE: "bg-yellow-400", SMALL: "bg-neon-green" };
+                          return (
+                            <div key={r.vehicleType}>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-300">{r.vehicleType}</span>
+                                <span className="text-white font-bold">{fmtMoney(r.revenue)} <span className="text-gray-500 font-normal text-xs">({r.percentage}%)</span></span>
+                              </div>
+                              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${colors[r.vehicleType] || "bg-gray-400"}`} style={{ width: `${r.percentage}%` }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {!(revenue.revenueByVehicle?.length) && <p className="text-gray-500 text-sm">No data yet.</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Transactions table */}
+                  <div className="bg-dark-card/60 border border-white/5 rounded-2xl overflow-hidden">
+                    <div className="p-5 border-b border-white/5">
+                      <h3 className="text-white font-bold">Recent Transactions (Last 20)</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider">
+                            <th className="py-3 px-5">User</th>
+                            <th className="py-3 px-5">Parking · Slot</th>
+                            <th className="py-3 px-5">Vehicle</th>
+                            <th className="py-3 px-5">Time</th>
+                            <th className="py-3 px-5">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {(revenue.transactions || []).map(t => (
+                            <tr key={t.bookingId} className="hover:bg-white/5 transition-colors text-sm">
+                              <td className="py-3 px-5 text-white">{t.userName}</td>
+                              <td className="py-3 px-5">
+                                <p className="text-gray-300">{t.parkingName}</p>
+                                <p className="text-gray-500 text-xs font-mono">{t.slotCode}</p>
+                              </td>
+                              <td className="py-3 px-5">
+                                <p className="font-mono text-gray-300">{t.vehicleNumber}</p>
+                                <p className="text-gray-500 text-xs">{t.vehicleType}</p>
+                              </td>
+                              <td className="py-3 px-5 text-gray-400 text-xs">
+                                <p>{fmtTime(t.startTime)}</p>
+                                <p>{fmtTime(t.endTime)}</p>
+                              </td>
+                              <td className="py-3 px-5 font-bold text-neon-green">{fmtMoney(t.amount)}</td>
+                            </tr>
+                          ))}
+                          {!(revenue.transactions?.length) && (
+                            <tr><td colSpan={5} className="py-10 text-center text-gray-500">No transactions yet.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── GHOST SLOTS ───────────────────────────────────────────── */}
+              {section === "ghost-slots" && (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <p className="text-gray-400 text-sm">
+                        Slots marked OCCUPIED/RESERVED with no active booking — stuck slots that need releasing.
+                      </p>
+                    </div>
+                    {ghosts.length > 0 && (
+                      <button onClick={handleFixAllGhosts}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-neon-green hover:bg-green-400 text-black font-bold rounded-xl shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-all">
+                        <FaWrench /> Fix All ({ghosts.length})
+                      </button>
+                    )}
+                  </div>
+
+                  {ghosts.length === 0 ? (
+                    <div className="text-center py-24 bg-dark-card/30 rounded-2xl border border-dashed border-neon-green/20">
+                      <FaCheckCircle className="text-neon-green text-5xl mx-auto mb-4" />
+                      <p className="text-neon-green font-bold text-lg">All slots are healthy!</p>
+                      <p className="text-gray-500 text-sm mt-1">No ghost slots detected.</p>
+                    </div>
+                  ) : (
+                    <div className="bg-dark-card/60 border border-white/5 rounded-2xl overflow-hidden">
+                      <div className="p-5 border-b border-white/5 flex items-center gap-3">
+                        <FaExclamationTriangle className="text-yellow-400" />
+                        <h3 className="text-white font-bold">{ghosts.length} Ghost Slot{ghosts.length > 1 ? "s" : ""} Detected</h3>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="bg-white/5 text-gray-400 text-xs uppercase tracking-wider">
+                              <th className="py-3 px-5">Slot Code</th>
+                              <th className="py-3 px-5">Parking</th>
+                              <th className="py-3 px-5">Vehicle Type</th>
+                              <th className="py-3 px-5">Stuck Status</th>
+                              <th className="py-3 px-5">Rate/hr</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5">
+                            {ghosts.map(g => (
+                              <motion.tr key={g.slotId} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                                className="hover:bg-white/5 transition-colors text-sm">
+                                <td className="py-3 px-5 font-mono text-neon-purple font-bold">{g.slotCode}</td>
+                                <td className="py-3 px-5 text-white">{g.parkingName}</td>
+                                <td className="py-3 px-5 text-gray-400">{g.vehicleType}</td>
+                                <td className="py-3 px-5"><StatusBadge status={g.status} /></td>
+                                <td className="py-3 px-5 text-gray-300">₹{g.costPerHour}</td>
+                              </motion.tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+            </motion.div>
+          </AnimatePresence>
+        )}
+      </DashboardLayout>
+    </>
   );
 }
-
-export default AdminDashboard;
