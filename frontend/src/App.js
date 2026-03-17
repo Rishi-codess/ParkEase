@@ -4,59 +4,63 @@ import LandingPage from "./pages/Landing_page";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
+// ---------------- User Pages ----------------
 import UserDashboard from "./pages/user/UserDashboard";
 import ParkingSlots from "./pages/user/ParkingSlots";
 import BookingHistory from "./pages/user/BookingHistory";
+import PaymentPage from "./pages/user/PaymentPage";
+import ActiveParking from "./pages/user/ActiveParking";
+import FinalBillPage from "./pages/user/FinalBillPage";
+import Settingspage from "./pages/user/Settingspage";
 
+// ---------------- Owner Pages ----------------
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import OwnerSlots from "./pages/owner/OwnerSlots";
 import OwnerBookings from "./pages/owner/OwnerBookings";
+import OwnerSettingsPage from "./pages/owner/Ownersettingspage"; 
 
+// ---------------- Admin Pages ----------------
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminSettingsPage from "./pages/admin/Adminsettingspage";
+
+// ---------------- Placeholder ----------------
 import Placeholder from "./pages/Placeholder";
-
-
-// ✅ ADD THIS IMPORt
-import SettingsPage from "./pages/user/Settingspage";
 
 function App() {
   return (
     <Router>
       <Routes>
 
-        {/* Landing Page */}
+        {/* ---------------- Landing ---------------- */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Auth Routes */}
+        {/* ---------------- Auth ---------------- */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* User Routes */}
+        {/* ---------------- User Routes ---------------- */}
         <Route path="/user/dashboard" element={<UserDashboard />} />
         <Route path="/user/slots" element={<ParkingSlots />} />
         <Route path="/user/bookings" element={<BookingHistory />} />
+        <Route path="/user/payments" element={<PaymentPage />} />
+        <Route path="/user/active-parking" element={<ActiveParking />} />
+        <Route path="/user/final-bill" element={<FinalBillPage />} />
+        <Route path="/user/settings" element={<Settingspage />} />
 
-        {/* Owner Routes */}
+        {/* ---------------- Owner Routes ---------------- */}
         <Route path="/owner/dashboard" element={<OwnerDashboard />} />
         <Route path="/owner/slots" element={<OwnerSlots />} />
         <Route path="/owner/bookings" element={<OwnerBookings />} />
+        <Route path="/owner/settings" element={<OwnerSettingsPage />} /> 
 
-        {/* Admin Routes */}
+        {/* ---------------- Admin Routes ---------------- */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/settings" element={<AdminSettingsPage />} />
 
-        {/* Placeholder Routes */}
+        {/* ---------------- Placeholder Routes ---------------- */}
         <Route path="/live-parking" element={<Placeholder />} />
         <Route path="/analytics" element={<Placeholder />} />
         <Route path="/reservations" element={<Placeholder />} />
-        <Route path="/payments" element={<Placeholder />} />
-
-
-
-        {/* ✅ UPDATED SETTINGS ROUTE */}
-        <Route path="/user/settings" element={<SettingsPage />} />
-
-        
-
 
       </Routes>
     </Router>

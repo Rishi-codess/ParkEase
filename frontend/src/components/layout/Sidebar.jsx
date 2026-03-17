@@ -70,15 +70,29 @@ export default function Sidebar({ role }) {
             <NavLink className={linkClass} to="/admin/dashboard">
               <FaUsers className="flex-shrink-0" /> Admin Panel
             </NavLink>
+            
           </>
+           
         )}
       </nav>
 
       {/* Bottom: Settings + Logout */}
       <div className="p-4 border-t border-white/5 space-y-1">
-        <NavLink className={linkClass} to="/settings">
-          <FaCog className="flex-shrink-0" /> Settings
-        </NavLink>
+        {role === "USER" && (
+          <NavLink className={linkClass} to="/user/settings">
+            <FaCog className="flex-shrink-0" /> Settings
+          </NavLink>
+        )}
+        {role === "OWNER" && (
+          <NavLink className={linkClass} to="/owner/settings">
+            <FaCog className="flex-shrink-0" /> Settings
+          </NavLink>
+        )}
+        {role === "ADMIN" && (
+          <NavLink className={linkClass} to="/admin/settings">
+            <FaCog className="flex-shrink-0" /> Settings
+          </NavLink>
+        )}
         <button onClick={() => navigate("/")} className={plainClass}>
           <FaSignOutAlt className="flex-shrink-0 text-neon-red" />
           <span className="text-neon-red">Logout</span>
