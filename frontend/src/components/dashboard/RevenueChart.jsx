@@ -1,15 +1,10 @@
 import { motion } from "framer-motion";
+import { weeklyChartData, lastWeekChartData } from "../../data/revenueData";
+import { useState } from "react";
 
 export default function RevenueChart() {
-    const data = [
-        { day: "Mon", value: 45, amount: "$450" },
-        { day: "Tue", value: 72, amount: "$720" },
-        { day: "Wed", value: 38, amount: "$380" },
-        { day: "Thu", value: 95, amount: "$950" },
-        { day: "Fri", value: 60, amount: "$600" },
-        { day: "Sat", value: 85, amount: "$850" },
-        { day: "Sun", value: 50, amount: "$500" },
-    ];
+    const [period, setPeriod] = useState("this");
+    const data = period === "this" ? weeklyChartData : lastWeekChartData;
 
     return (
         <div className="bg-dark-card/60 backdrop-blur-xl border border-white/5 rounded-2xl p-6 relative overflow-hidden">
@@ -18,9 +13,13 @@ export default function RevenueChart() {
                     <h3 className="text-lg font-bold text-white">Revenue Trends</h3>
                     <p className="text-xs text-gray-400">Daily earnings for this week</p>
                 </div>
-                <select className="bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 px-3 py-1 outline-none">
-                    <option>This Week</option>
-                    <option>Last Week</option>
+                <select
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-lg text-xs text-gray-300 px-3 py-1 outline-none"
+                >
+                    <option value="this">This Week</option>
+                    <option value="last">Last Week</option>
                 </select>
             </div>
 

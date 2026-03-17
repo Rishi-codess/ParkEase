@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  FaCar, FaHistory, FaUsers, FaParking, FaChartBar,
-  FaCog, FaSignOutAlt, FaLock, FaWallet,
+  FaCar, FaHistory, FaUsers, FaChartBar,
+  FaCog, FaSignOutAlt, FaLock, FaWallet, FaPlus, FaParking, FaMoneyBillWave,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
 const linkClass = ({ isActive }) =>
@@ -15,6 +16,11 @@ const plainClass =
 
 export default function Sidebar({ role }) {
   const navigate = useNavigate();
+  const settingsRoute = role === "OWNER"
+    ? "/owner/settings"
+    : role === "ADMIN"
+      ? "/admin/settings"
+      : "/user/settings";
 
   return (
     <aside className="w-64 flex flex-col text-white fixed left-0 top-0 h-full bg-dark-bg border-r border-white/5 z-20">
@@ -55,20 +61,43 @@ export default function Sidebar({ role }) {
             <NavLink className={linkClass} to="/owner/dashboard">
               <FaChartBar className="flex-shrink-0" /> Dashboard
             </NavLink>
-            <NavLink className={linkClass} to="/owner/slots">
-              <FaParking className="flex-shrink-0" /> Manage Slots
-            </NavLink>
             <NavLink className={linkClass} to="/owner/bookings">
               <FaHistory className="flex-shrink-0" /> Bookings
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">Quick Actions</p>
+            <NavLink className={linkClass} to="/owner/add-parking">
+              <FaPlus className="flex-shrink-0" /> Add Parking
             </NavLink>
           </>
         )}
 
         {role === "ADMIN" && (
           <>
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-1">Admin</p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-1">Overview</p>
             <NavLink className={linkClass} to="/admin/dashboard">
-              <FaUsers className="flex-shrink-0" /> Admin Panel
+              <FaChartBar className="flex-shrink-0" /> Dashboard
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">Manage</p>
+            <NavLink className={linkClass} to="/admin/users">
+              <FaUsers className="flex-shrink-0" /> Users
+            </NavLink>
+            <NavLink className={linkClass} to="/admin/parkings">
+              <FaParking className="flex-shrink-0" /> Parkings
+            </NavLink>
+            <NavLink className={linkClass} to="/admin/bookings">
+              <FaHistory className="flex-shrink-0" /> Bookings
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">Finance</p>
+            <NavLink className={linkClass} to="/admin/revenue">
+              <FaMoneyBillWave className="flex-shrink-0" /> Revenue
+            </NavLink>
+
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest px-3 mb-2 mt-4">System</p>
+            <NavLink className={linkClass} to="/admin/ghost-slots">
+              <FaExclamationTriangle className="flex-shrink-0 text-neon-red" /> Ghost Slots
             </NavLink>
             
           </>
@@ -78,6 +107,7 @@ export default function Sidebar({ role }) {
 
       {/* Bottom: Settings + Logout */}
       <div className="p-4 border-t border-white/5 space-y-1">
+<<<<<<< HEAD
         {role === "USER" && (
           <NavLink className={linkClass} to="/user/settings">
             <FaCog className="flex-shrink-0" /> Settings
@@ -93,6 +123,11 @@ export default function Sidebar({ role }) {
             <FaCog className="flex-shrink-0" /> Settings
           </NavLink>
         )}
+=======
+        <NavLink className={linkClass} to={settingsRoute}>
+          <FaCog className="flex-shrink-0" /> Settings
+        </NavLink>
+>>>>>>> main
         <button onClick={() => navigate("/")} className={plainClass}>
           <FaSignOutAlt className="flex-shrink-0 text-neon-red" />
           <span className="text-neon-red">Logout</span>

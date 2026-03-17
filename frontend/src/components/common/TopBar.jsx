@@ -1,5 +1,6 @@
-import { FiSearch, FiBell } from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 import { FaUserCircle } from "react-icons/fa";
+import NotificationBell from "./NotificationBell";
 
 export default function TopBar({ onSearch, searchTerm, userInfo, toggleProfile }) {
     return (
@@ -20,9 +21,7 @@ export default function TopBar({ onSearch, searchTerm, userInfo, toggleProfile }
             {/* Right Side */}
             <div className="flex items-center gap-4">
                 {/* Notification Bell */}
-                <button className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all">
-                    <FiBell size={16} />
-                </button>
+                <NotificationBell />
 
                 {/* Profile Button — always clickable */}
                 <button
