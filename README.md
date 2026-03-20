@@ -65,6 +65,11 @@ It reduces time spent searching for parking, minimizes traffic congestion, and i
 7. Slot status updates in real-time  
 
 ---
+## ⚙️ Setup & Installation Guide
+
+Follow the steps below to run the project locally.
+
+---
 
 ### 🔽 1. Clone the Repository
 
