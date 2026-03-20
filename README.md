@@ -66,12 +66,66 @@ It reduces time spent searching for parking, minimizes traffic congestion, and i
 
 ---
 
+### 🔽 1. Clone the Repository
+
+git clone https://github.com/your-username/parkease.git
+cd parkease
+
+## 📦 2. Backend Setup (Spring Boot)
+cd backend
+
+Open the project in IntelliJ / Eclipse
+
+Configure database in application.properties:
+
+spring.datasource.url=jdbc:mysql://localhost:3306/parkease
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.jpa.hibernate.ddl-auto=update
+
+Run the Spring Boot application
+
+✅ Backend will run on:
+http://localhost:8080
+
+## 💾 3. Database Setup (MySQL)
+
+Open MySQL Workbench
+
+Create database:
+
+CREATE DATABASE parkease;
+
+Tables will be automatically created when backend runs
+
+## 🎨 4. Frontend Setup (React)
+cd frontend
+npm install
+npm start
+
+✅ Frontend will run on:
+http://localhost:3000
+
+## 🔗 5. Connect Frontend with Backend
+
+Make sure the API base URL is:
+
+http://localhost:8080/api
+
+## ▶️ 6. Run the Application
+
+Start Backend (Spring Boot)
+
+Start Frontend (React)
+
+Open browser → http://localhost:3000
+
 ## 🌍 Problem Solved
 
-- ❌ Time wasted in searching parking  
-- ❌ Traffic congestion inside parking areas  
-- ❌ Lack of real-time parking information  
-- ❌ Inefficient parking management  
+-  Time wasted in searching parking  
+-  Traffic congestion inside parking areas  
+-  Lack of real-time parking information  
+-  Inefficient parking management  
 
 ---
 
