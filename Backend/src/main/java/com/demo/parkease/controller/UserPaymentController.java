@@ -67,7 +67,7 @@ public class UserPaymentController {
     @PostMapping("/{paymentId}/confirm")
     public ResponseEntity<PaymentResponse> confirm(
             @RequestHeader("Authorization") String auth,
-            @PathVariable Long paymentId,
+            @PathVariable("paymentId") Long paymentId,
             @RequestBody ConfirmPaymentRequest request) {
 
         return ResponseEntity.ok(paymentService.confirmPayment(paymentId, request, userId(auth)));
@@ -77,7 +77,7 @@ public class UserPaymentController {
     @PostMapping("/end-parking/{bookingId}")
     public ResponseEntity<PaymentResponse> endParking(
             @RequestHeader("Authorization") String auth,
-            @PathVariable Long bookingId) {
+            @PathVariable("bookingId") Long bookingId) {
 
         return ResponseEntity.ok(paymentService.endParking(bookingId, userId(auth)));
     }
@@ -96,7 +96,7 @@ public class UserPaymentController {
     @PostMapping("/penalty/pay-later/{bookingId}")
     public ResponseEntity<Map<String, String>> payLater(
             @RequestHeader("Authorization") String auth,
-            @PathVariable Long bookingId) {
+            @PathVariable("bookingId") Long bookingId) {
 
         paymentService.markPenaltyPayLater(bookingId, userId(auth));
         return ResponseEntity.ok(Map.of(

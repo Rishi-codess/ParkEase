@@ -42,7 +42,7 @@ public class OwnerBookingController {
     @GetMapping("/parkings/{parkingId}/bookings")
     public ResponseEntity<List<BookingResponse>> getParkingBookings(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long parkingId) {
+            @PathVariable("parkingId") Long parkingId) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
         return ResponseEntity.ok(
@@ -54,7 +54,7 @@ public class OwnerBookingController {
     @PatchMapping("/bookings/{bookingId}/cancel")
     public ResponseEntity<BookingResponse> cancelBooking(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long bookingId) {
+            @PathVariable("bookingId") Long bookingId) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
         return ResponseEntity.ok(
@@ -66,7 +66,7 @@ public class OwnerBookingController {
     @PatchMapping("/bookings/{bookingId}/complete")
     public ResponseEntity<BookingResponse> completeBooking(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long bookingId) {
+            @PathVariable("bookingId") Long bookingId) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
         return ResponseEntity.ok(

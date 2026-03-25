@@ -29,7 +29,7 @@ public class UserParkingController {
     // Returns a single parking with full slot list for ParkingSlots.jsx slot grid
     @GetMapping("/{parkingId}")
     public ResponseEntity<UserParkingResponse> getParkingById(
-            @PathVariable Long parkingId) {
+            @PathVariable("parkingId") Long parkingId) {
         return ResponseEntity.ok(userParkingService.getParkingById(parkingId));
     }
 }

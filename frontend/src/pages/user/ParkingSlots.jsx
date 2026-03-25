@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import { FaCar, FaLock, FaBan, FaMotorcycle, FaTruck, FaSpinner, FaTimes, FaClock, FaRupeeSign } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
@@ -188,6 +188,7 @@ function BookingModal({ slot, parkingId, parkingName, onClose, onSuccess }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ParkingSlots() {
   const navigate   = useNavigate();
+  const location   = useLocation();
   const { parkingId } = useParams();
 
   const [parking,      setParking]      = useState(null);
@@ -223,6 +224,18 @@ export default function ParkingSlots() {
     };
     load();
   }, [parkingId]);
+
+  // Handle auto-opening a slot modal if navigated from Chatbot
+  useEffect(() => {
+    if (slots.length > 0 && location.state?.autoOpenSlotId) {
+      const slot = slots.find(s => s.id === location.state.autoOpenSlotId);
+      if (slot && slot.bookable && !isBlocked) {
+        setSelectedSlot(slot);
+      }
+      // Clean up the URL state so it doesn't re-trigger on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [slots, location.state, isBlocked]);
 
   const vehicleTypes = ["ALL", ...new Set((slots).map(s => s.vehicleType).filter(Boolean))];
   const filteredSlots = typeFilter === "ALL" ? slots : slots.filter(s => s.vehicleType === typeFilter);

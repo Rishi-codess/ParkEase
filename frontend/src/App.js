@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Placeholder from "./pages/Placeholder";
 import ProtectedRoute from "./components/common/ProtectedRoute";
+import Chatbot from "./components/common/Chatbot";
 
 import UserDashboard from "./pages/user/UserDashboard";
 import ParkingSlots from "./pages/user/ParkingSlots";
@@ -39,6 +40,9 @@ const A = ({ children }) => (
 function App() {
   return (
     <Router>
+      {/* ── Global AI Chatbot (floating widget) ── */}
+      <Chatbot />
+
       <Routes>
 
         {/* -------- PUBLIC ROUTES -------- */}

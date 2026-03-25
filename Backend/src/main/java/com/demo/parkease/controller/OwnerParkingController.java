@@ -56,7 +56,7 @@ public class OwnerParkingController {
     @GetMapping("/{parkingId}")
     public ResponseEntity<ParkingResponse> getParkingById(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long parkingId) {
+            @PathVariable("parkingId") Long parkingId) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
         return ResponseEntity.ok(parkingService.getParkingById(parkingId, ownerId));
@@ -77,7 +77,7 @@ public class OwnerParkingController {
 
     @PostMapping("/{parkingId}/slots")
     public ResponseEntity<ParkingSlotResponse> addSlot(
-            @PathVariable Long parkingId,
+            @PathVariable("parkingId") Long parkingId,
             @RequestBody CreateSlotRequest request) {
         return ResponseEntity.ok(parkingService.addSlot(parkingId, request));
     }

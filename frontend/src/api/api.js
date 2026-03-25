@@ -116,3 +116,9 @@ export const ownerBookingsAPI = {
 export const ownerDashboardAPI = {
   getStats: () => api.get("/owner/dashboard/stats"),
 };
+
+// ── Chatbot ───────────────────────────────────────────────────────────────────
+export const chatAPI = {
+  sendMessage:   (body)     => api.post("/chat", body),
+  clearHistory:  (userId)   => api.delete(`/chat/history/${userId}`),
+};

@@ -30,7 +30,7 @@ public class SlotController {
     @GetMapping("/{slotId}")
     public ResponseEntity<ParkingSlotResponse> getSlot(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long slotId) {
+            @PathVariable("slotId") Long slotId) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
         return ResponseEntity.ok(slotService.getSlotById(slotId, ownerId));
@@ -40,7 +40,7 @@ public class SlotController {
     @PatchMapping("/{slotId}/status")
     public ResponseEntity<ParkingSlotResponse> updateStatus(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long slotId,
+            @PathVariable("slotId") Long slotId,
             @RequestBody SlotStatusRequest request) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
@@ -53,7 +53,7 @@ public class SlotController {
     @PatchMapping("/{slotId}/price")
     public ResponseEntity<ParkingSlotResponse> updatePrice(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long slotId,
+            @PathVariable("slotId") Long slotId,
             @RequestBody SlotPriceRequest request) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
@@ -66,7 +66,7 @@ public class SlotController {
     @PatchMapping("/{slotId}/toggle")
     public ResponseEntity<ParkingSlotResponse> toggleDisabled(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long slotId) {
+            @PathVariable("slotId") Long slotId) {
 
         Long ownerId = getOwnerIdFromToken(authHeader);
         return ResponseEntity.ok(

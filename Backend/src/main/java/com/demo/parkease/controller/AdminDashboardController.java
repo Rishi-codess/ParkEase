@@ -58,7 +58,7 @@ public class AdminDashboardController {
     // PATCH /api/admin/users/{userId}/status — suspend or activate a user
     @PatchMapping("/users/{userId}/status")
     public ResponseEntity<Map<String, String>> updateUserStatus(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @RequestBody Map<String, String> body) {
         adminDashboardService.updateUserStatus(userId, body.get("status"));
         return ResponseEntity.ok(Map.of("message", "User status updated"));
@@ -67,7 +67,7 @@ public class AdminDashboardController {
     // DELETE /api/admin/parkings/{parkingId} — remove a parking lot
     @DeleteMapping("/parkings/{parkingId}")
     public ResponseEntity<Map<String, String>> deleteParking(
-            @PathVariable Long parkingId) {
+            @PathVariable("parkingId") Long parkingId) {
         adminDashboardService.deleteParking(parkingId);
         return ResponseEntity.ok(Map.of("message", "Parking deleted"));
     }

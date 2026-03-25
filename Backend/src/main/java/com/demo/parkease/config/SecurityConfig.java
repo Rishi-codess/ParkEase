@@ -82,6 +82,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/user/dashboard/**").hasAuthority("ROLE_USER")
                         .requestMatchers("/api/user/payments/**").hasAuthority("ROLE_USER") // ← ADDED
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                        .requestMatchers("/api/chat/**").authenticated()   // ← Chatbot: any logged-in user
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

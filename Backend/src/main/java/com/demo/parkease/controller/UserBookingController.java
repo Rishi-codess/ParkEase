@@ -54,7 +54,7 @@ public class UserBookingController {
     @PatchMapping("/{bookingId}/cancel")
     public ResponseEntity<BookingResponse> cancelBooking(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long bookingId) {
+            @PathVariable("bookingId") Long bookingId) {
 
         Long userId = getUserIdFromToken(authHeader);
         return ResponseEntity.ok(
