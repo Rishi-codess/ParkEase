@@ -75,22 +75,13 @@ Follow the steps below to run the project locally.
 
 ---
 
-### 🔽 1. Clone the Repository
+## 🔽 1. Clone the Repository
 
 git clone https://github.com/your-username/parkease.git
 cd parkease
 
-## ✅ 2.Setup AI Chatbot:
 
-1. Create a .env file in backend folder
-2. Add your Groq API key:
-
-   GROQ_API_KEY=your_key_here
-
-3. Run backend and frontend
-
-
-## 📦 3. Backend Setup (Spring Boot)
+## 📦 2. Backend Setup (Spring Boot)
 cd backend
 
 Open the project in IntelliJ / Eclipse
@@ -107,7 +98,7 @@ Run the Spring Boot application
 ✅ Backend will run on:
 http://localhost:8080
 
-## 💾 4. Database Setup (MySQL)
+## 💾 3. Database Setup (MySQL)
 
 Open MySQL Workbench
 
@@ -116,6 +107,17 @@ Create database:
 CREATE DATABASE parkease;
 
 Tables will be automatically created when backend runs
+
+## ✅ 4.Setup AI Chatbot:
+
+1. Create a .env file in backend folder
+2. Add your Groq API key:
+
+   GROQ_API_KEY=your_key_here
+
+3. Run backend and frontend
+
+
 
 ## 🎨 5. Frontend Setup (React)
 cd frontend
