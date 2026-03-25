@@ -11,7 +11,8 @@ It reduces time spent searching for parking, minimizes traffic congestion, and i
 - 📅 Online parking slot booking  
 - 🧑‍💻 User dashboard for bookings & history  
 - 🏢 Owner dashboard for parking management  
-- ⚡ Fast and responsive UI  
+- ⚡ Fast and responsive UI
+- 🤖 AI Chatbot available
 - 🤖 AI-based insights (future scope)
 
 ---
@@ -20,6 +21,7 @@ It reduces time spent searching for parking, minimizes traffic congestion, and i
 
 **Frontend:** React.js  
 **Backend:** Java, Spring Boot  
+**AI:** Groq API (LLaMA models)
 **Database:** MySQL  
 **Tools:** Git, GitHub, Postman, VS Code  
 
@@ -35,7 +37,8 @@ It reduces time spent searching for parking, minimizes traffic congestion, and i
 4. View available slots in real-time  
 5. Select a slot and click **"Book Now"**  
 6. Confirm booking  
-7. View booking details in dashboard  
+7. View booking details in dashboard
+8. Ask queries in AI chatbot
 
 ✅ Result: You get a reserved parking slot without wasting time.
 
@@ -65,6 +68,7 @@ It reduces time spent searching for parking, minimizes traffic congestion, and i
 7. Slot status updates in real-time  
 
 ---
+
 ## ⚙️ Setup & Installation Guide
 
 Follow the steps below to run the project locally.
@@ -76,7 +80,17 @@ Follow the steps below to run the project locally.
 git clone https://github.com/your-username/parkease.git
 cd parkease
 
-## 📦 2. Backend Setup (Spring Boot)
+## ✅ 2.Setup AI Chatbot:
+
+1. Create a .env file in backend folder
+2. Add your Groq API key:
+
+   GROQ_API_KEY=your_key_here
+
+3. Run backend and frontend
+
+
+## 📦 3. Backend Setup (Spring Boot)
 cd backend
 
 Open the project in IntelliJ / Eclipse
@@ -93,7 +107,7 @@ Run the Spring Boot application
 ✅ Backend will run on:
 http://localhost:8080
 
-## 💾 3. Database Setup (MySQL)
+## 💾 4. Database Setup (MySQL)
 
 Open MySQL Workbench
 
@@ -103,7 +117,7 @@ CREATE DATABASE parkease;
 
 Tables will be automatically created when backend runs
 
-## 🎨 4. Frontend Setup (React)
+## 🎨 5. Frontend Setup (React)
 cd frontend
 npm install
 npm start
@@ -111,13 +125,13 @@ npm start
 ✅ Frontend will run on:
 http://localhost:3000
 
-## 🔗 5. Connect Frontend with Backend
+## 🔗 6. Connect Frontend with Backend
 
 Make sure the API base URL is:
 
 http://localhost:8080/api
 
-## ▶️ 6. Run the Application
+## ▶️ 7. Run the Application
 
 Start Backend (Spring Boot)
 
@@ -153,6 +167,31 @@ Open browser → http://localhost:3000
 - Bhavitra S – Backend & Deployment  
 
 ---
+
+## 🧠 AI Chatbot Overview
+
+The chatbot is powered by an LLM API (Groq) and works as follows:
+
+Frontend (React) → Backend (Spring Boot) → AI API → Backend APIs → Database
+
+It converts user messages into structured actions and executes real backend operations.
+
+---
+
+## 🔑 How to Get Groq API Key
+
+- Go to: https://console.groq.com/
+- Sign up / login
+- Generate API key
+- Copy the key
+
+---
+
+## 📌 Important Notes
+- .env file is not pushed to GitHub (for security)
+- Each developer must create their own .env file
+- Do not expose API keys publicly
+
 
 ## 📌 Conclusion
 
