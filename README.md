@@ -77,7 +77,7 @@ Follow the steps below to run the project locally.
 
 ## 🔽 1. Clone the Repository
 
-git clone https://github.com/your-username/parkease.git
+git clone https://github.com/Rishi-codess/ParkEase.git
 cd parkease
 
 
